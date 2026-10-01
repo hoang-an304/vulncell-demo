@@ -191,7 +191,7 @@ Mỗi lần admin chốt trạng thái xử lý, hệ thống ghi **một dòng 
 | Bảng xếp hạng (có cache) | — | **3,0 ms** |
 | Khi spam API | — | 300 request lọt, **51.398 bị chặn**, server vẫn trả lời ~4,6 ms |
 | Dò mật khẩu | — | đúng 5 lần thử, **1.205 lần bị khóa** |
-| API end-to-end (smoke) | — | **61/61 phép thử PASS** |
+| API end-to-end (smoke) | — | **63/63 phép thử PASS** |
 
 ---
 

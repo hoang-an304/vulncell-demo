@@ -355,6 +355,17 @@ async function main() {
 
   const tinyAvatar =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+  // Trước khi upload: endpoint trả ảnh anonymous mặc định 200 (không còn 404)
+  const avatarDefault = await fetch(`${BASE}/api/users/${hacker.username}/avatar`);
+  const avatarDefaultBuf = Buffer.from(await avatarDefault.arrayBuffer());
+  check(
+    'GET /users/:username/avatar khi chưa upload → 200 image/png (anonymous)',
+    avatarDefault.status === 200 &&
+      (avatarDefault.headers.get('content-type') || '').includes('image/png') &&
+      avatarDefaultBuf.length > 1000
+  );
+
   const patchProfile = await api('PATCH', '/api/users/me', {
     cookieJar: hackerJar,
     body: { bio: `Smoke bio ${stamp}`, avatar: tinyAvatar },
@@ -363,6 +374,17 @@ async function main() {
     'cập nhật bio + avatar → 200 và trả dữ liệu mới',
     patchProfile.status === 200 && patchProfile.data?.bio === `Smoke bio ${stamp}` && patchProfile.data?.avatar === tinyAvatar,
     JSON.stringify(patchProfile.data)
+  );
+
+  // Sau khi upload: endpoint trả đúng ảnh thật vừa gửi (1×1 px, rất nhỏ so với ảnh mặc định)
+  const avatarAfter = await fetch(`${BASE}/api/users/${hacker.username}/avatar`);
+  const avatarAfterBuf = Buffer.from(await avatarAfter.arrayBuffer());
+  check(
+    'GET /users/:username/avatar sau khi upload → 200 đúng ảnh thật',
+    avatarAfter.status === 200 &&
+      (avatarAfter.headers.get('content-type') || '').includes('image/png') &&
+      avatarAfterBuf.length > 0 &&
+      avatarAfterBuf.length < 300
   );
 
   const patchBadBio = await api('PATCH', '/api/users/me', {

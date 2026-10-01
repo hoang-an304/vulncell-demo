@@ -18,6 +18,9 @@ RUN npx prisma generate
 COPY src ./src
 COPY scripts ./scripts
 
+# Ảnh anonymous mặc định cho GET /users/:username/avatar khi user chưa upload
+COPY public ./public
+
 EXPOSE 4000
 
 # Khi container khởi động: áp migration -> seed demo (idempotent: bỏ qua nếu đã có report) -> chạy server

@@ -189,7 +189,7 @@ Privacy: khách/hacker khác chỉ thấy report disclosed **và không phải S
 
 ### GET /users/:username/avatar (công khai)
 - 200 `image/png|jpeg|webp` + `Cache-Control: public, max-age=300` nếu user đã upload avatar.
-- **404** nếu chưa có ảnh (kèm `Cache-Control: max-age=60`) — frontend tự fallback về ảnh mặc định `anonymous.png` trong `frontend/public/`.
+- 200 `image/png` (ảnh anonymous mặc định `backend/public/anonymous.png`, `Cache-Control: max-age=60`) nếu chưa có ảnh — **không trả 404**, console trình duyệt sạch.
 - Dùng endpoint này ở mọi nơi cần avatar (navbar, card report, timeline, leaderboard…) để payload JSON không phải mang theo ảnh base64.
 
 ## Hệ thống

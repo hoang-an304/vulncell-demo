@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const prisma = require('../prisma');
 const { authenticate, optionalAuthenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
@@ -10,6 +12,10 @@ const { cacheGet, cacheSet } = require('../redis');
 const router = express.Router();
 
 const STATS_TTL_SECONDS = 60;
+
+// Ảnh anonymous mặc định (đọc 1 lần lúc khởi động) — trả về khi user chưa upload avatar,
+// để trình duyệt nhận 200 thay vì 404 (console sạch).
+const DEFAULT_AVATAR = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'anonymous.png'));
 
 // PATCH /api/users/me — profile editor: cập nhật avatar + bio của chính mình.
 // Gửi null/chuỗi rỗng để xoá; body bị zod chặn nếu avatar không phải data URL hoặc bio quá 160 ký tự.
@@ -30,7 +36,7 @@ router.patch('/me', authenticate, validate(updateProfileSchema), async (req, res
 });
 
 // GET /api/users/:username/avatar — trả ảnh đại diện dạng nhị phân (nhẹ, cache được).
-// Không có avatar -> 404; frontend tự fallback ảnh anonymous mặc định.
+// Chưa upload avatar -> trả luôn ảnh anonymous mặc định với 200 (tránh 404 đỏ trong console).
 router.get('/:username/avatar', async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
@@ -38,7 +44,11 @@ router.get('/:username/avatar', async (req, res, next) => {
       select: { avatar: true },
     });
     const match = user?.avatar ? /^data:([^;]+);base64,(.+)$/.exec(user.avatar) : null;
-    if (!match) return res.status(404).set('Cache-Control', 'public, max-age=60').end();
+    if (!match) {
+      res.set('Content-Type', 'image/png');
+      res.set('Cache-Control', 'public, max-age=60');
+      return res.send(DEFAULT_AVATAR);
+    }
     res.set('Content-Type', match[1]);
     res.set('Cache-Control', 'public, max-age=300');
     res.send(Buffer.from(match[2], 'base64'));

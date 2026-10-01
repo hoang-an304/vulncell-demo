@@ -9,7 +9,7 @@
 
 | Hạng mục | Trạng thái |
 |---|---|
-| Backend: auth, reports, actions (transaction), state machine, rate limit 3 lớp, sanitize, validate zod, profile editor (avatar/bio) | ✅ smoke test **61/61 PASS** |
+| Backend: auth, reports, actions (transaction), state machine, rate limit 3 lớp, sanitize, validate zod, profile editor (avatar/bio) | ✅ smoke test **63/63 PASS** |
 | Frontend: 6 màn hình (Auth, Dashboard + Filters panel, Submit, Case, Leaderboard, Profile) + UI theo feedback (rail icon, card 2 lề, mobile menu, profile editor avatar/bio, code block wrap/copy/collapse; nút nổi "+" đã bỏ ở bản cuối) | ✅ đã kiểm tra trên trình duyệt |
 | Reputation/Signal (ledger + cửa sổ 365 ngày) · Leaderboard cache · Profile privacy | ✅ |
 | Seed demo: **10 reporter + 100 report** (mọi state/severity/bounty, PRNG tái lập) + seed bench 500k (`generate_series`) | ✅ |
@@ -138,7 +138,7 @@ Thứ tự màn hình: **Auth → Dashboard → Case → Submit → Leaderboard 
 ## 5. Đối chiếu tiêu chí Advanced (đã xong 100%)
 | Tiêu chí | Đáp ứng | Bằng chứng |
 |---|---|---|
-| 4–5+ tính năng chính | Auth + phân quyền, Submit + Markdown, Case/Timeline/State machine, Reputation/Signal + rate limit 3 lớp, Leaderboard, Profile + avatar/bio, Filters nâng cao (search cú pháp HackerOne) | smoke **61/61** · UI đã test trên trình duyệt |
+| 4–5+ tính năng chính | Auth + phân quyền, Submit + Markdown, Case/Timeline/State machine, Reputation/Signal + rate limit 3 lớp, Leaderboard, Profile + avatar/bio, Filters nâng cao (search cú pháp HackerOne) | smoke **63/63** · UI đã test trên trình duyệt |
 | Optimize performance | Redis cache (leaderboard/list/facets/profile), pg_trgm + GIN, composite index, keyset cursor, denormalize `User.reputation`, gzip, connection pool, tránh N+1 | migration `20260930163820_perf_optimizations` |
 | Benchmarking | k6: **3 mốc × 3 kịch bản × 2 chế độ** + 2 kịch bản security; bảng + phân tích đầy đủ | `docs/benchmark-report.md` — leaderboard **1263 → 47,8 ms** (DB thuần) |
 | Stress testing | **500k report** thật, ramp-up 10→50 VU, chứng minh chặn brute-force/spam bằng counters 429 | `bench/results/security-*.json` |

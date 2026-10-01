@@ -1,5 +1,5 @@
-// Avatar dùng chung: ảnh thật lấy từ /api/users/:username/avatar (endpoint nhẹ, cache được);
-// user chưa có ảnh -> 404 -> tự fallback về ảnh anonymous mặc định trong /public.
+// Avatar dùng chung: ảnh lấy từ /api/users/:username/avatar (endpoint nhẹ, cache được);
+// user chưa có ảnh -> API trả ảnh anonymous mặc định (200); onError giữ làm lưới an toàn.
 const DEFAULT_AVATAR = '/anonymous.png';
 
 export default function Avatar({ username, sizeClass = 'h-6 w-6', className = '' }) {
