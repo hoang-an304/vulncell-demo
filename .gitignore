@@ -22,8 +22,5 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Tài liệu tham khảo HackerOne (bản chụp trang web — giữ nội bộ, không publish)
-hackerone/
-
 # Prisma client generate tại máy
 backend/src/generated/
