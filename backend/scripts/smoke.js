@@ -1,13 +1,31 @@
-/* Smoke test end-to-end cho VulnCell API.
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * CHẶNG 7 (phần 1) — SMOKE TEST: "ĐẶC TẢ SỐNG" CỦA HỆ THỐNG (scripts/smoke.js)
+ *
+ * 63 phép thử end-to-end chạy qua HTTP như một người dùng thật:
+ *   • mỗi check() là MỘT LUẬT của hệ thống (vd "gửi role=ADMIN vẫn chỉ là HACKER")
+ *   • đọc file này như đọc đặc tả: nhóm nào -> luật gì -> file backend nào thực thi
+ *
+ * Các nhóm (khớp với 6 chặng đã học):
+ *   0. Health             — server còn sống
+ *   1. Register           — đăng ký/đăng nhập, chống leo quyền (Chặng 1–3)
+ *   2. Tạo report         — validate + sanitize + quota theo Signal (Chặng 4–6)
+ *   3. Timeline & state   — state machine, transaction, điểm ledger (Chặng 3–4)
+ *   4. List & search      — lọc, tìm kiếm, phân trang (Chặng 2 + query)
+ *   4b. Filters & facets  — bộ lọc nâng cao, số đếm
+ *   4c. Riêng tư SPAM     — SPAM ẩn với người ngoài (Chặng 2/6)
+ *   5. Leaderboard/Profile— reputation/signal/bounty, profile công khai
+ *   5b. Profile editor    — avatar/bio + endpoint avatar mặc định (Trạm 3)
+ *   6. Logout             — phiên đăng nhập
  *
  * Cách dùng:
  *   1. Server đang chạy:            npm run dev
  *   2. Đã seed dữ liệu demo:        npm run seed
- *   3. Chạy test:                   npm run smoke
+ *   3. Chạy test:                   npm run smoke     (kỳ vọng: 63 PASS / 0 FAIL)
  *
  * Yêu cầu .env có RATE_LIMIT_DISABLED=false (để test được rate limit).
  * Script tự tạo tài khoản mới mỗi lần chạy nên chạy lại không bị trùng.
- */
+ * Sau khi chạy nên dọn: npm run seed:reset + flush Redis (bộ đếm nằm ở Redis).
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 const BASE = process.env.SMOKE_BASE_URL || `http://localhost:${process.env.PORT || 4000}`;
 
 let passed = 0;
