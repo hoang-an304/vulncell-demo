@@ -1,19 +1,33 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHẶNG 2 — MÔ HÌNH DỮ LIỆU (schema.prisma)
+//
+// File này mô tả "các bảng" trong database Postgres. Đây KHÔNG phải SQL —
+// Prisma đọc file này rồi SINH RA migration (file .sql) để tạo bảng thật.
+//   • 4 bảng (model):  User, Report, ReportEvent, ReputationLedger
+//   • 4 enum (danh sách giá trị cố định): Role, ReportState, Severity, EventType
+// Quan hệ: 1 User — nhiều Report · 1 Report — nhiều ReportEvent · 1 User — nhiều ReputationLedger
+// ═══════════════════════════════════════════════════════════════════════════════
+
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-js" // sinh thư viện @prisma/client để code gọi prisma.user...
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") // địa chỉ DB lấy từ file .env
 }
 
+// ── ENUM = danh sách giá trị cố định (DB chỉ cho phép đúng các giá trị này) ──────
+
+// Vai trò người dùng
 enum Role {
   HACKER
   ADMIN
 }
 
-// Nhóm Undisclosed: NONE, PENDING, TRIAGED
-// Nhóm Disclosed: RESOLVED, DUPLICATE, INFORMATIVE, NOT_APPLICABLE, SPAM
+// Trạng thái report — "xương sống" nghiệp vụ (luật chuyển nằm ở services/stateMachine.js)
+// Nhóm Undisclosed (chưa công khai): NONE, PENDING, TRIAGED
+// Nhóm Disclosed   (đã kết luận):    RESOLVED, DUPLICATE, INFORMATIVE, NOT_APPLICABLE, SPAM
 enum ReportState {
   NONE
   PENDING
@@ -25,6 +39,7 @@ enum ReportState {
   SPAM
 }
 
+// Mức độ nghiêm trọng — NONE nghĩa là "chưa triage"
 enum Severity {
   NONE
   LOW
@@ -33,83 +48,99 @@ enum Severity {
   CRITICAL
 }
 
+// Loại "sự kiện" hiển thị ở trang Case (timeline)
 enum EventType {
-  SUBMITTED
-  COMMENT
-  STATE_CHANGE
-  BOUNTY
+  SUBMITTED // hacker nộp report
+  COMMENT // bình luận (hacker hoặc admin)
+  STATE_CHANGE // đổi trạng thái
+  BOUNTY // cấp tiền thưởng
 }
 
+// ── MODEL = một BẢNG trong database ─────────────────────────────────────────────
+
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
+  id           String   @id @default(uuid()) // khóa chính, tự sinh UUID
+  username     String   @unique // @unique = không được trùng
   email        String   @unique
-  passwordHash String
-  role         Role     @default(HACKER)
+  passwordHash String // KHÔNG lưu mật khẩu thật, chỉ lưu bản băm (xem routes/auth.js)
+  role         Role     @default(HACKER) // tạo mới mặc định là HACKER
   // Ảnh đại diện: data URL base64 (client resize về 256px trước khi gửi) — nullable.
   avatar       String?  @db.Text
   // Mô tả ngắn trên profile (profile editor), tối đa 160 ký tự.
   bio          String?  @db.VarChar(160)
-  // Denormalized: tổng điểm reputation cả đời, cập nhật cùng transaction khi ghi ReputationLedger.
-  // Ledger vẫn là nguồn sự thật; cột này để leaderboard/profile khỏi phải aggregate.
+  // DENORMALIZED: tổng điểm reputation cả đời, cập nhật cùng transaction khi ghi ReputationLedger.
+  // Ledger vẫn là "nguồn sự thật"; cột này chỉ để leaderboard/profile khỏi phải aggregate (tính lại).
   reputation   Int      @default(0)
   createdAt    DateTime @default(now())
 
-  reports       Report[]
-  events        ReportEvent[]
-  ledgerEntries ReputationLedger[]
+  // Quan hệ (relation) — các "đầu dây" nối sang bảng khác
+  reports       Report[] // 1 user viết nhiều report
+  events        ReportEvent[] // 1 user tạo nhiều event (comment/đổi state/cấp bounty)
+  ledgerEntries ReputationLedger[] // 1 user có nhiều dòng sổ điểm
 
-  @@index([reputation])
+  @@index([reputation]) // index để sắp xếp bảng xếp hạng nhanh
 }
 
 model Report {
   id               String      @id @default(uuid())
-  reporterId       String
-  reporter         User        @relation(fields: [reporterId], references: [id])
-  target           String
-  weakness         String
-  cveId            String?
+  reporterId       String // "khóa ngoại" thô (chỉ là chuỗi id)
+  reporter         User        @relation(fields: [reporterId], references: [id]) // quan hệ tới User
+  target           String // mục tiêu (domain/URL bị lỗi)
+  weakness         String // loại lỗ hổng (SQLi, XSS…)
+  cveId            String? // dấu ? = cho phép NULL (không có CVE vẫn hợp lệ)
   shortDescription String
-  details          String
-  severity         Severity    @default(NONE)
-  state            ReportState @default(NONE)
-  bounty           Int?
+  details          String // nội dung Markdown đầy đủ
+  severity         Severity    @default(NONE) // NONE cho tới khi admin triage
+  state            ReportState @default(NONE) // khi nộp, CODE đặt thành PENDING
+  bounty           Int? // tiền thưởng — chỉ có khi ở trạng thái RESOLVED
   createdAt        DateTime    @default(now())
-  disclosedAt      DateTime?
+  disclosedAt      DateTime? // thời điểm report vào nhóm "disclosed" (null nếu chưa)
 
   events ReportEvent[]
 
-  @@index([state])
-  @@index([weakness])
-  @@index([createdAt])
+  // INDEX = "mục lục" giúp DB tìm/sắp xếp nhanh theo cột (thay vì quét cả bảng)
+  @@index([state]) // lọc theo trạng thái
+  @@index([weakness]) // thống kê/nhóm theo loại lỗ hổng
+  @@index([createdAt]) // sắp xếp "mới nhất"
+
+  // ── Index tối ưu (khai báo tại đây để Prisma giữ; lý thuyết xem docs/deep-dive-guide.md — Phần A4) ──
+  // Composite index = tra theo cột đầu RỒI đã sắp theo cột sau → bỏ được bước Sort.
+  @@index([state, createdAt], map: "Report_state_createdAt_idx")
+  @@index([severity, createdAt], map: "Report_severity_createdAt_idx")
+  @@index([reporterId, createdAt], map: "Report_reporterId_createdAt_idx")
+  // GIN + pg_trgm = index cho tìm kiếm text kiểu ILIKE '%...%' (index B-tree thường KHÔNG dùng được).
+  @@index([weakness(ops: raw("gin_trgm_ops"))], type: Gin, map: "Report_weakness_trgm_idx")
+  @@index([shortDescription(ops: raw("gin_trgm_ops"))], type: Gin, map: "Report_shortDescription_trgm_idx")
+  @@index([target(ops: raw("gin_trgm_ops"))], type: Gin, map: "Report_target_trgm_idx")
 }
 
+// Nhật ký/timeline của một report — mỗi hành động là 1 dòng, chỉ ghi thêm chứ không sửa lại.
 model ReportEvent {
   id           String       @id @default(uuid())
   reportId     String
   report       Report       @relation(fields: [reportId], references: [id])
-  actorId      String
+  actorId      String // ai thực hiện (user id)
   actor        User         @relation(fields: [actorId], references: [id])
   type         EventType
-  content      String?
-  fromState    ReportState?
-  toState      ReportState?
-  bountyAmount Int?
+  content      String? // nội dung comment (nếu type = COMMENT)
+  fromState    ReportState? // trạng thái trước (nếu type = STATE_CHANGE)
+  toState      ReportState? // trạng thái sau
+  bountyAmount Int? // số tiền (nếu type = BOUNTY)
   createdAt    DateTime     @default(now())
 
-  @@index([reportId])
+  @@index([reportId]) // tải timeline của 1 report
 }
 
-// So sổ điểm — mỗi dòng là một lần cộng/trừ, có timestamp riêng.
-// Reputation = tổng tất cả dòng. Signal = tổng các dòng trong 365 ngày gần nhất.
-// TV4 (Backend Security) sẽ dùng bảng này để tính Reputation/Signal và rate limit.
+// SỔ ĐIỂM (append-only): mỗi dòng là một lần cộng/trừ, có timestamp riêng.
+// Reputation = tổng TẤT CẢ các dòng. Signal = tổng các dòng trong 365 NGÀY gần nhất.
+// → Chính vì có cột createdAt mà tách được "cả đời" vs "365 ngày" (cột User.reputation thì không).
 model ReputationLedger {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  points    Int
-  reason    String
+  points    Int // +7 khi RESOLVED, +2 DUPLICATE, 0 INFORMATIVE, -5 NOT_APPLICABLE, -10 SPAM
+  reason    String // lý do cộng/trừ (để đọc lại lịch sử)
   createdAt DateTime @default(now())
 
-  @@index([userId, createdAt])
+  @@index([userId, createdAt]) // cần cho: SUM theo user + lọc theo khoảng thời gian (signal)
 }
