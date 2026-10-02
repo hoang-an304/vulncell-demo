@@ -285,15 +285,21 @@ router.get('/weaknesses', optionalAuthenticate, async (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/reports — tạo case mới (giới hạn theo Signal)
+// POST /api/reports — NỘP report mới. Có 2 chốt:
+//   1) assertCanSubmit: kiểm quota theo Signal (Chặng 4) → 429 nếu hết/bị khoá
+//   2) ghi Report + event SUBMITTED trong 1 transaction
 // ---------------------------------------------------------------------------
 router.post('/', authenticate, validate(createReportSchema), async (req, res, next) => {
   try {
     const { target, weakness, cveId, shortDescription, details } = req.body;
+
+    // CHỐT 1: hôm nay còn lượt nộp không? (signal âm -> không bao giờ còn)
     await assertCanSubmit(req.user.id);
 
+    // Làm sạch Markdown trước khi lưu (chống stored XSS)
     const cleanDetails = sanitizeMarkdown(details);
 
+    // Ghi Report + event SUBMITTED cùng lúc: cùng xong hoặc không gì cả
     const report = await prisma.$transaction(async (tx) => {
       const r = await tx.report.create({
         data: {
@@ -303,7 +309,7 @@ router.post('/', authenticate, validate(createReportSchema), async (req, res, ne
           cveId: cveId ? sanitizePlainText(cveId) : null,
           shortDescription: sanitizePlainText(shortDescription),
           details: cleanDetails,
-          state: 'PENDING',
+          state: 'PENDING', // report mới LUÔN PENDING (không phải NONE)
         },
       });
       await tx.reportEvent.create({
@@ -317,8 +323,9 @@ router.post('/', authenticate, validate(createReportSchema), async (req, res, ne
       return r;
     });
 
+    // Đã dùng 1 lượt: tăng bộ đếm Redis (tới hết ngày UTC)
     await recordSubmit(req.user.id);
-    await bumpReportsVersion();
+    await bumpReportsVersion(); // để cache danh sách tự hết hạn
     res.status(201).json(report);
   } catch (err) {
     next(err);
@@ -357,26 +364,34 @@ router.get('/:id/events', optionalAuthenticate, async (req, res, next) => {
   }
 });
 
-// POST /api/reports/:id/actions — Action Box (1 transaction cho mọi thay đổi)
+// POST /api/reports/:id/actions — Action Box: MỌI thay đổi đi qua đây (1 transaction).
+// Phân quyền: hacker chỉ được comment; admin được đổi state / severity / bounty.
 router.post('/:id/actions', authenticate, validate(actionSchema), async (req, res, next) => {
   try {
     const { comment, newState, severity, bountyAmount } = req.body;
     const isAdmin = req.user.role === 'ADMIN';
 
+    // Chặn hacker tự đổi state/severity/bounty (chỉ comment là được)
     if ((newState || severity || bountyAmount) && !isAdmin) {
       return res.status(403).json({ error: 'Only admin can change state, severity or bounty' });
     }
 
+    // Làm sạch Markdown trước khi lưu (chống stored XSS — xem services/sanitize.js)
     const cleanComment = comment ? sanitizeMarkdown(comment) : null;
 
+    // $transaction = "hoặc TẤT CẢ cùng thành công, hoặc HUỶ HẾT nếu có lỗi".
+    // Nhờ vậy không bao giờ có chuyện đổi state mà quên ghi sổ điểm, hay ngược lại.
     const result = await prisma.$transaction(async (tx) => {
       const report = await tx.report.findUnique({ where: { id: req.params.id } });
       if (!report) throw new HttpError(404, 'Report not found');
 
+      // "Người gác cổng" của Chặng 3: kiểm tra luật chuyển state/severity/bounty
       assertActionAllowed(report, { newState, severity, bountyAmount });
 
+      // Có phải lần ĐẦU TIÊN report rơi vào nhóm disclosed? (để ghi sổ điểm 1 lần)
       const enteringDisclosed = Boolean(newState) && isDisclosed(newState) && !isDisclosed(report.state);
 
+      // Gom các cột cần cập nhật trên Report
       const updates = {};
       if (newState) updates.state = newState;
       if (severity) updates.severity = severity;
@@ -420,6 +435,7 @@ router.post('/:id/actions', authenticate, validate(actionSchema), async (req, re
       }
 
       if (enteringDisclosed) {
+        // Vào nhóm disclosed lần đầu → ghi 1 dòng sổ điểm cho REPORTER (người nộp)
         const points = pointsForState(newState);
         await tx.reputationLedger.create({
           data: {
@@ -455,6 +471,7 @@ router.post('/:id/actions', authenticate, validate(actionSchema), async (req, re
     });
 
     // Điểm/thống kê thay đổi -> xoá cache leaderboard + stats của reporter
+    // (và bumpReportsVersion để cache danh sách/facets tự "hết hạn")
     await cacheDel('lb:reputation', 'lb:signal', `user:stats:${result.reporterId}`);
     await bumpReportsVersion();
     res.json(result);
