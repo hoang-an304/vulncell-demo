@@ -1,31 +1,56 @@
 # Lộ trình đọc hiểu sâu logic VulnCell
 
-> **Mục đích:** học tới đâu, ghi lại tới đó. Code được **comment trực tiếp bằng ngôn ngữ dễ hiểu**, còn tài liệu này là nơi **tổng hợp toàn bộ kiến thức**.
-> **Cách dùng:** đi tuần tự từ Phần A → C → D. Mỗi trạm/chặng có "Câu hỏi kiểm tra" — trả lời được mới đi tiếp.
-> Không cần sửa logic, chỉ thêm comment + đọc + chạy thử.
+> **Mục đích:** tổng hợp toàn bộ kiến thức logic của hệ thống; code được **comment trực tiếp bằng ngôn ngữ dễ hiểu** ở từng file.
+> **Cách dùng:** đi tuần tự: **Nền tảng (A)** → **Chặng 1 → 7** → **Phụ lục**. Mỗi mục có "Câu hỏi kiểm tra" — trả lời được mới đi tiếp.
+> Không cần sửa logic, chỉ đọc + chạy thử theo ví dụ.
 
-## Bảng tiến độ
+## Mục lục
 
-| Phần | Nội dung | Trạng thái |
-|---|---|---|
-| A | Khái niệm nền (Node, npm, migration, Redis) | ✅ đã viết |
-| B | Bản đồ: một request đi qua đâu | ✅ đã viết |
-| C.1 | **Trạm 1** — `backend/src/server.js` | ✅ đã học + đã comment code |
-| C.2 | **Trạm 2** — `backend/src/app.js` | ✅ đã học + đã comment code |
-| C.3 | **Trạm 3** — `backend/src/routes/auth.js` (đăng ký/đăng nhập/cookie/JWT) | ✅ đã học + đã comment code |
-| C.4 | **Trạm 4** — `backend/src/middleware/auth.js` (trạm gác) | ✅ đã học + đã comment code |
-| C.5 | **Trạm 5** — Xử lý lỗi (`validate.js`, `HttpError`, error handler) | ✅ đã học + đã comment code |
-| D1 | **Chặng 2** — Mô hình dữ liệu (`prisma/schema.prisma`) | ✅ đã học + comment code |
-| D2 | **Chặng 3** — State machine (`services/stateMachine.js` + `routes/reports.js`) | ✅ đã học + comment code |
-| D3 | **Chặng 4** — Reputation / Signal / quota (`services/reputation.js`) | ✅ đã học + comment code |
-| D4 | **Chặng 5** — Rate limit & cache (`middleware/rateLimit.js`, `src/redis.js`) | ✅ đã học + comment code |
-| D5 | Chặng 6 — Frontend (`App.jsx`, `AuthContext`, `api/client.js`, pages) | ⬜ chưa học |
-| D6 | Chặng 7 — Smoke test, seed, benchmark | ⬜ chưa học |
-| E | Phụ lục: chạy & deploy (dev vs demo container) | ✅ đã viết |
+**Phần A — Nền tảng**
+- A1. Node.js, npm và cách project được chạy
+- A2. Migration & seed là gì
+- A3. Postgres và Redis — kho chính vs nhớ tạm
+- A4. Index & drift — "mục lục" của database
+
+**Chặng 1 — Một request đi qua backend** (5 trạm)
+- Bản đồ tổng quan
+- Trạm 1: `server.js` — khởi động
+- Trạm 2: `app.js` — lắp ráp middleware
+- Trạm 3: `routes/auth.js` — đăng ký / đăng nhập / cookie / JWT
+- Trạm 4: `middleware/auth.js` — trạm gác
+- Trạm 5: Xử lý lỗi — `validate.js` + `HttpError` + error handler
+- Tổng kết Chặng 1
+
+**Chặng 2 — Mô hình dữ liệu** (`backend/prisma/schema.prisma`)
+- 1. Bốn bảng và quan hệ
+- 1b. Khóa chính / khóa ngoại — "link" giữa các bảng
+- 2. Enum — danh sách giá trị cố định
+- 3. Reputation vs ReputationLedger
+- 4. Vì sao `ReportEvent` tách riêng
+- 5. Index trong dự án
+
+**Chặng 3 — State machine** (`services/stateMachine.js` + `routes/reports.js`)
+- 1. Hai file, hai vai trò · 2. Bảng chuyển 8 trạng thái · 3. Điểm theo trạng thái · 4. Luật severity & bounty · 5. Phân quyền · 6. Một action sinh ra gì · 7. Kết quả thật
+
+**Chặng 4 — Reputation / Signal / quota** (`services/reputation.js`)
+- 1. Hai con số, cùng một nguồn · 2. Vì sao cần cả hai · 3. Quota theo Signal · 4. Cột `reputation` có khớp ledger? · 5. Kết quả thật
+
+**Chặng 5 — Rate limit 3 lớp & cache** (`middleware/rateLimit.js`, `src/redis.js`)
+- 1. Ba lớp bảo vệ · 2. Vì sao fail-open · 3. Cache & cơ chế "version" · 4. Kết quả thật · 5. `trust proxy`
+
+**Chặng 6 — Frontend** (`App.jsx`, `AuthContext`, `api/client.js`, sanitize, Markdown, search)
+- 1. Bức tranh tổng thể · 1b. Cơ chế luồng trang (routing) · 2. Gọi API · 3. Đăng nhập · 4. Sanitize 2 tầng · 5. Markdown & CodeBlock · 6. Cú pháp tìm kiếm · 6b. Cơ chế tìm kiếm (từ ô search tới Postgres) · 7. Privacy SPAM
+
+**Chặng 7 — Kiểm chứng: smoke test, seed & benchmark**
+- 1. Smoke test · 2. Seed · 3. Seed benchmark · 4. Benchmark k6 · 5. Bảng kết quả · 6. Cách đọc bảng
+
+**Phụ lục — Chạy & deploy (dev vs demo container)**
+
+**Checklist ôn thi** — 8 câu hỏi lớn
 
 ---
 
-# PHẦN A — Khái niệm nền (đọc một lần là dùng được)
+# PHẦN A — NỀN TẢNG
 
 ## A1. Node.js, npm và cách project được chạy
 
@@ -70,14 +95,9 @@ npm run dev (gốc)              → concurrently: chạy song song backend + fr
 | Dữ liệu | User, Report, sổ điểm… | Cache kết quả tính toán + bộ đếm (đăng nhập sai, số lượt nộp) |
 | Nếu "chết" | Không thể chạy (phải có) | Server **vẫn chạy**: đọc thẳng Postgres, rate limit cho qua (fail-open) |
 
-## A4. Migration là gì và Index là gì?
+## A4. Index & drift — "mục lục" của database
 
-**Migration = "lịch sử thay đổi cấu trúc database".** Mỗi lần đổi `schema.prisma`, Prisma ghi ra một file SQL trong `backend/prisma/migrations/<thời-điểm>_<tên>/migration.sql` để **diễn lại** thay đổi đó. Database có bảng `_prisma_migrations` ghi "đã áp migration nào, lúc nào" — như cuốn sổ biên lai.
-
-| Lệnh | Việc |
-|---|---|
-| `prisma migrate dev` | Ở máy dev: so `schema.prisma` ↔ DB → **sinh** file migration mới rồi áp |
-| `prisma migrate deploy` | Ở máy chủ/container: chỉ **áp** các file migration đã có (không sinh mới) |
+> Migration là gì / 2 lệnh migrate đã nói ở **A2**; phần này tập trung vào **index** (thứ quyết định tốc độ truy vấn) và **drift** (vì sao index có thể biến mất).
 
 **Index = "mục lục" của database.** Không có index, muốn tìm 1 dòng DB phải **đọc từng trang** (sequential scan). Có index, DB tra mục lục để nhảy thẳng tới dòng cần — nhanh hơn rất nhiều khi bảng lớn. Đổi lại: index tốn chỗ và làm thao tác ghi chậm hơn chút.
 
@@ -90,6 +110,7 @@ npm run dev (gốc)              → concurrently: chạy song song backend + fr
 - **Composite index**: tra theo cột đầu **rồi** đã xếp sẵn theo cột sau. Query `WHERE state='PENDING' ORDER BY createdAt DESC` không phải lọc xong sắp lại nữa.
 - **pg_trgm / GIN**: `pg_trgm` cắt chuỗi thành các cụm 3 ký tự ("trigram"), `GIN` là loại index tra các cụm đó. Nhờ vậy `ILIKE '%api%'` (tìm chuỗi con) **mới dùng được index** — index B-tree thường không làm được, nên thiếu nó thì tìm kiếm = quét cả bảng.
 - **Vì sao giúp benchmark**: k6 chạy cùng truy vấn trên dataset lớn rồi ghi p95/thời gian; có index thì kế hoạch đổi từ "quét toàn bảng" sang "tra index" → nhanh hơn nhiều ở quy mô lớn. (Với 100 report của bản demo, Postgres còn thấy quét cả bảng rẻ hơn nên chưa dùng index — **bình thường**: index chỉ đáng giá khi bảng đủ lớn.)
+
 **Vì sao index (hay bảng) có thể tự dưng "biến mất"? (drift)** — Prisma coi `schema.prisma` là **nguồn sự thật về cấu trúc DB**. Nếu ai đó tạo index/bảng **bằng SQL tay** mà **không khai báo** trong schema, thì lần `prisma migrate dev` kế tiếp Prisma so schema ↔ DB, thấy "DB có thứ mà schema không biết" → coi là **drift** và sinh migration **DROP** nó. Vì vậy mọi thứ muốn tồn tại lâu dài **phải khai báo trong `schema.prisma`** (composite: `@@index([a, b])`; GIN trigram: `type: Gin` + `ops: raw("gin_trgm_ops")`).
 
 **Cách TỰ KIỂM TRA một index thuộc loại nào:**
@@ -100,7 +121,11 @@ npm run dev (gốc)              → concurrently: chạy song song backend + fr
 
 ---
 
-# PHẦN B — Bản đồ: một request đi qua đâu
+# CHẶNG 1 — MỘT REQUEST ĐI QUA BACKEND
+
+> Chặng 1 gồm **5 trạm**, đi lần lượt: khởi động → lắp ráp middleware → auth → trạm gác → xử lý lỗi.
+
+## Bản đồ tổng quan
 
 ```
 Browser (fetch '/api/...' , credentials: 'include')
@@ -123,13 +148,7 @@ Express — app.js, theo ĐÚNG thứ tự đăng ký:
 JSON response  { ... }  hoặc  { "error": "..." }
 ```
 
----
-
-# PHẦN C — CHẶNG 1: Một request đi qua backend
-
-> Chặng 1 gồm **5 trạm** — ✅ **đã học xong toàn bộ** (code đã được comment dễ hiểu ở cả 5 trạm).
-
-## C.1 — Trạm 1: `backend/src/server.js` ✅
+## Trạm 1 — `backend/src/server.js`: khởi động
 
 File này là **điểm khởi đầu**, chạy đầu tiên. Nó chỉ làm 4 việc:
 
@@ -197,7 +216,7 @@ app.listen(PORT, () => { ... }).on('error', ...); //  mở cổng, nhận reques
 
 ---
 
-## C.2 — Trạm 2: `backend/src/app.js` ✅
+## Trạm 2 — `backend/src/app.js`: lắp ráp middleware
 
 Ý tưởng: **mỗi request là một vị khách vào quán**, đi lần lượt qua các **"cửa"** đăng ký bằng `app.use(...)`. Cửa nào đăng ký trước thì chạy trước và có quyền **chặn khách**.
 
@@ -213,6 +232,8 @@ app.listen(PORT, () => { ... }).on('error', ...); //  mở cổng, nhận reques
 | — | 4 nhóm `routes` | Các "phòng chức năng": auth / reports / leaderboard / users |
 | — | 404 handler | Không khớp phòng nào → báo "không tìm thấy" |
 | — | error handler | "Phòng quản lý" hứng mọi lỗi |
+
+> **Thêm ở production:** `app.set('trust proxy', 1)` — xem Chặng 5, mục 5.
 
 Cú pháp cần biết:
 
@@ -238,7 +259,7 @@ Cú pháp cần biết:
 
 ---
 
-## C.3 — Trạm 3: `backend/src/routes/auth.js` ✅
+## Trạm 3 — `backend/src/routes/auth.js`: đăng ký / đăng nhập / cookie / JWT
 
 File này là một **Router** — "bảng chỉ dẫn nhỏ" chứa 4 đường con, được `app.js` gắn vào với tiền tố `/api/auth`:
 
@@ -294,7 +315,9 @@ File này là một **Router** — "bảng chỉ dẫn nhỏ" chứa 4 đường
 3. Vì sao `logout` chỉ cần xoá cookie? → JWT self-contained, server không giữ phiên; xoá cookie = mất thẻ.
 4. Vì sao đăng nhập sai user và sai mật khẩu trả cùng thông báo? → Chống user enumeration.
 
-## C.4 — Trạm 4: `backend/src/middleware/auth.js` ✅
+---
+
+## Trạm 4 — `backend/src/middleware/auth.js`: trạm gác
 
 **Middleware** = đoạn code chạy **trước** handler của route, có quyền cho đi tiếp (`next()`) hoặc chặn luôn. File này là "trạm gác" xác thực.
 
@@ -337,7 +360,9 @@ Cookie **không phân biệt port**: dev (`:5173`) và demo (`:8080`) cùng host
 2. `optionalAuthenticate` để làm gì ở danh sách report? → Biết "ai đang xem" để lọc SPAM (admin/chủ nick/khách).
 3. Vì sao cần `COOKIE_NAME` riêng cho demo? → Cookie không phân biệt port; tránh 2 stack ghi đè phiên nhau.
 
-## C.5 — Trạm 5: Xử lý lỗi — `validate.js` + `HttpError` + error handler ✅
+---
+
+## Trạm 5 — Xử lý lỗi: `validate.js` + `HttpError` + error handler
 
 Backend có **hai "cửa trả lỗi"**, đừng lẫn lộn:
 
@@ -353,6 +378,8 @@ Backend có **hai "cửa trả lỗi"**, đừng lẫn lộn:
 2. Sai → lấy lỗi **đầu tiên** → `400 "<field>: <message>"`.
 3. `req.body = result.data` — **thay** bằng dữ liệu đã chuẩn hoá (trim/lowercase).
 4. `next()` — hợp lệ thì đi tiếp vào handler.
+
+> **Phạm vi của zod (hay bị nhầm):** zod chỉ áp cho **`req.body`** — JSON client **GỬI LÊN** (POST/PATCH). Nó **KHÔNG** validate query string (`?severity=…` do `parseReportFilters` tự kiểm), không validate cookie/header, và **không** đụng tới JSON server TRẢ VỀ. Vai trò: kiểm kiểu/độ dài/regex + chuẩn hoá (trim/lowercase) + **bỏ field lạ** (vd `role:"ADMIN"`).
 
 ### B. `HttpError` + error handler — đường đi của lỗi
 ```
@@ -396,7 +423,7 @@ Nơi ném `HttpError` trong repo:
 
 ---
 
-### ✅ Tổng kết Chặng 1 — "một request đi qua backend"
+## Tổng kết Chặng 1 — một request đi qua backend
 
 | Trạm | File | Việc chính |
 |---|---|---|
@@ -406,15 +433,11 @@ Nơi ném `HttpError` trong repo:
 | 4 | `middleware/auth.js` | Đọc cookie → verify JWT → tra DB; `authenticate` / `optionalAuthenticate` |
 | 5 | `validate.js` + `lib/httpError.js` | 2 cửa trả lỗi: zod 400 tại chỗ và `HttpError` → error handler |
 
-→ **Chặng 1 hoàn thành.** Tiếp theo: **Chặng 2 — mô hình dữ liệu (`backend/prisma/schema.prisma`)**.
-
 ---
 
-# PHẦN D — Chặng 2–7 (roadmap, đào sâu dần)
+# CHẶNG 2 — MÔ HÌNH DỮ LIỆU (`backend/prisma/schema.prisma`)
 
-## Chặng 2 — Mô hình dữ liệu: `backend/prisma/schema.prisma` ✅
-
-### 1. Bốn bảng và quan hệ
+## 1. Bốn bảng và quan hệ
 
 ```
 User ──1:N──► Report            (1 user viết nhiều report — Report.reporterId)
@@ -432,7 +455,7 @@ User ──1:N──► ReportEvent       (ai làm sự kiện — event.actorId
 
 Ngoài ra `backend/src/prisma.js` chỉ tạo **một** `PrismaClient` dùng chung (`module.exports = prisma`) — cả app dùng chung một "ống nói chuyện" với DB thay vì mở nhiều kết nối.
 
-### 1b. Khóa chính / khóa ngoại — "link" giữa các bảng
+## 1b. Khóa chính / khóa ngoại — "link" giữa các bảng
 
 **Khóa chính (Primary Key):** mỗi bảng có cột `id` kiểu UUID định danh duy nhất từng dòng (`@id @default(uuid())`).
 
@@ -466,7 +489,7 @@ User.id ◄── ReputationLedger.userId    (User 1─N ReputationLedger)
 
 **Xem trực quan ở đâu:** Prisma Studio (bấm 1 dòng → xem quan hệ), `psql` với `\d "ReportEvent"` (có mục *Foreign-key constraints* ở cuối), hoặc DBeaver → chuột phải schema → **View Diagram** (sơ đồ ER).
 
-### 2. Enum — "danh sách giá trị cố định"
+## 2. Enum — "danh sách giá trị cố định"
 
 | Enum | Giá trị | Ghi chú |
 |---|---|---|
@@ -477,7 +500,7 @@ User.id ◄── ReputationLedger.userId    (User 1─N ReputationLedger)
 
 Dùng **enum** thay vì chuỗi tự do để **DB chặn giá trị sai** và code được gợi ý khi gõ — ví dụ không thể lưu state `"RESOLVE"` (thiếu D).
 
-### 3. Vì sao vừa có cột `User.reputation` vừa có bảng `ReputationLedger`?
+## 3. Vì sao vừa có cột `User.reputation` vừa có bảng `ReputationLedger`?
 
 - **Ledger = nguồn sự thật.** Mỗi dòng có `createdAt` + `reason` + `points`, ghi một lần không sửa → tính được:
   - `Reputation = SUM(tất cả dòng)`
@@ -486,7 +509,7 @@ Dùng **enum** thay vì chuỗi tự do để **DB chặn giá trị sai** và c
 
 Nếu chỉ có cột `reputation` → **không tách được Signal**; nếu chỉ có ledger → leaderboard phải SUM liên tục (chậm). Nên cần cả hai.
 
-### 4. Vì sao `ReportEvent` tách riêng?
+## 4. Vì sao `ReportEvent` tách riêng?
 
 Vì report cần một **dòng thời gian không sửa lại**: mỗi hành động (nộp, comment, đổi state, cấp bounty) là 1 dòng, kèm `actor`, `fromState → toState`, số tiền. Trang **Case** ghép các dòng này thành timeline. Nếu nhét tất cả vào `Report` thì không có lịch sử.
 
@@ -497,7 +520,7 @@ Vài cột "đúng thiết kế":
 - `avatar String? @db.Text` (data URL base64) và `bio String? @db.VarChar(160)` — giới hạn độ dài ngay ở DB.
 - `state @default(NONE)` nhưng khi nộp, **code** đặt `PENDING` (NONE để dành cho dữ liệu cũ/seed).
 
-### 5. Index trong dự án
+## 5. Index trong dự án
 
 | Index | Loại | Phục vụ query nào |
 |---|---|---|
@@ -516,13 +539,15 @@ Vài cột "đúng thiết kế":
 3. Index `[userId, createdAt]` phục vụ 2 việc gì? → SUM điểm theo user và lọc theo khoảng thời gian.
 4. Vì sao một index tạo bằng SQL tay có thể bị Prisma xoá ở lần migrate sau? → Vì nó không có trong `schema.prisma` (nguồn sự thật) nên bị coi là drift; muốn giữ phải khai báo `@@index`.
 
-## Chặng 3 — State machine: `services/stateMachine.js` + `routes/reports.js` ✅
+---
 
-### 1. Hai file, hai vai trò
+# CHẶNG 3 — STATE MACHINE (`services/stateMachine.js` + `routes/reports.js`)
+
+## 1. Hai file, hai vai trò
 - `services/stateMachine.js` = **LUẬT** (không đụng database): chuyển trạng thái nào hợp lệ, điểm bao nhiêu, khi nào được severity/bounty.
 - `routes/reports.js` → `POST /:id/actions` = **THỰC THI** luật trong **1 transaction** (ghi Report + ReportEvent + ReputationLedger).
 
-### 2. Tám trạng thái & bảng chuyển (chỉ đi tiến)
+## 2. Tám trạng thái & bảng chuyển (chỉ đi tiến)
 
 **Undisclosed** (chưa công khai): `NONE`, `PENDING`, `TRIAGED` · **Disclosed** (đã kết luận): `RESOLVED`, `DUPLICATE`, `INFORMATIVE`, `NOT_APPLICABLE`, `SPAM`
 
@@ -535,7 +560,7 @@ Vài cột "đúng thiết kế":
 
 `PENDING → SPAM` là "làn đường tắt" cho spam rõ ràng (bỏ qua triage). Report mới luôn là `PENDING`.
 
-### 3. Điểm theo trạng thái (khi vào nhóm disclosed)
+## 3. Điểm theo trạng thái (khi vào nhóm disclosed)
 
 | Trạng thái disclosed | Điểm cho reporter |
 |---|---|
@@ -545,18 +570,18 @@ Vài cột "đúng thiết kế":
 | `NOT_APPLICABLE` | −5 |
 | `SPAM` | **−10** |
 
-### 4. Luật severity & bounty
+## 4. Luật severity & bounty
 - **Severity** chỉ đặt được khi state `≥ TRIAGED`.
 - **Bounty** chỉ cấp được khi report `RESOLVED`.
 - Report đã disclosed → **cấm mọi action** (kể cả comment).
 
-### 5. Phân quyền trong action
+## 5. Phân quyền trong action
 | Vai | Được làm |
 |---|---|
 | HACKER | chỉ **comment** — cố đổi state/severity/bounty → **403** |
 | ADMIN | mọi thứ: đổi state, đặt severity, cấp bounty |
 
-### 6. Một action sinh ra gì? (bên trong transaction)
+## 6. Một action sinh ra gì? (bên trong transaction)
 ```
 assertActionAllowed (kiểm luật, KHÔNG ghi DB)
   → cập nhật Report (state / severity / bounty / disclosedAt)
@@ -571,7 +596,7 @@ assertActionAllowed (kiểm luật, KHÔNG ghi DB)
 ```
 **Vì sao cần transaction?** `$transaction` = "tất cả cùng thành công, hoặc huỷ hết". Nhờ vậy không bao giờ có cảnh Report đổi state mà sổ điểm lại không ghi (hoặc ngược lại).
 
-### 7. Kết quả thật (demo vòng đời 1 report)
+## 7. Kết quả thật (demo vòng đời 1 report)
 
 | Bước | Kết quả |
 |---|---|
@@ -584,15 +609,17 @@ assertActionAllowed (kiểm luật, KHÔNG ghi DB)
 | Hacker đổi state | **403** `Only admin can change state, severity or bounty` |
 | Hacker comment | **200** (được phép) |
 
-### 8. Câu hỏi kiểm tra
+## 8. Câu hỏi kiểm tra
 1. Vì sao `PENDING → RESOLVED` bị chặn? → Bảng `ALLOWED_TRANSITIONS` không cho nhảy cóc.
 2. Vì sao phải bọc trong `$transaction`? → Để Report + Event + Ledger + reputation cùng thay đổi hoặc cùng không.
 3. Điểm ledger ghi khi nào? → Chỉ khi **lần đầu** report vào nhóm disclosed (`enteringDisclosed`), tránh ghi trùng.
 4. Ai được cấp bounty và khi nào? → Admin, chỉ khi report `RESOLVED`.
 
-## Chặng 4 — Reputation / Signal / quota: `services/reputation.js` + `middleware/rateLimit.js` ✅
+---
 
-### 1. Hai con số, cùng một nguồn (`ReputationLedger`)
+# CHẶNG 4 — REPUTATION / SIGNAL / QUOTA (`services/reputation.js`)
+
+## 1. Hai con số, cùng một nguồn (`ReputationLedger`)
 
 | | **Reputation** | **Signal** |
 |---|---|---|
@@ -602,7 +629,7 @@ assertActionAllowed (kiểm luật, KHÔNG ghi DB)
 
 Cả hai đọc từ cùng bảng ledger — code giống nhau, **khác duy nhất** điều kiện `createdAt >= now − 365d`.
 
-### 2. Vì sao cần cả hai? (bằng chứng từ chính seed data)
+## 2. Vì sao cần cả hai? (bằng chứng từ chính seed data)
 
 | user | `reputation` (cột) | `SUM` cả đời | `signal` 365d |
 |---|---|---|---|
@@ -614,7 +641,7 @@ Cả hai đọc từ cùng bảng ledger — code giống nhau, **khác duy nh�
 
 → `reporter8` có **reputation dương (+4)** nhưng **signal âm (−5)** → **vẫn bị khoá nộp**. Nếu chỉ có một con số thì không phân biệt được "điểm cũ tốt" với "gần đây bị phạt". Đây chính là lý do tồn tại của Signal.
 
-### 3. Quota nộp theo Signal
+## 3. Quota nộp theo Signal
 
 ```
 dailyLimitForSignal(signal):
@@ -625,11 +652,11 @@ dailyLimitForSignal(signal):
 - Đếm bằng Redis key `submit:count:<userId>:<YYYY-MM-DD>`; nếu chưa có thì đếm từ DB rồi cache **tới hết ngày UTC** (00:00 UTC).
 - `assertCanSubmit(userId)` chạy **TRƯỚC** khi tạo report (ném 429 nếu hết/bị khoá); `recordSubmit(userId)` chạy **SAU** khi tạo thành công.
 
-### 4. Cột `User.reputation` có khớp ledger?
+## 4. Cột `User.reputation` có khớp ledger?
 
 Có — bảng trên cho thấy `cot_reputation` **luôn bằng** `SUM` cả đời, vì cột được cập nhật **cùng transaction** mỗi lần ghi ledger (đã học ở Chặng 3).
 
-### 5. Kết quả thật (demo)
+## 5. Kết quả thật (demo)
 
 | Tình huống | Kết quả |
 |---|---|
@@ -639,15 +666,17 @@ Có — bảng trên cho thấy `cot_reputation` **luôn bằng** `SUM` cả đ�
 | `reporter9` nộp lần 2 trong ngày | **429** `Daily submission limit reached (1/1 today, Signal 0 < 5)` |
 | Redis | `submit:count:<userId>:2026-10-02`, TTL ~47327s (đếm ngược tới 00:00 UTC) |
 
-### 6. Câu hỏi kiểm tra
+## 6. Câu hỏi kiểm tra
 1. Vì sao tách Signal khỏi Reputation? → Để phạt "gần đây" không bị điểm cũ "rửa sạch"; `reporter8` là ví dụ sống.
 2. Quota tính theo mốc thời gian nào? → Ngày **UTC** (00:00 UTC), không theo giờ Việt Nam.
 3. Bộ đếm lượt nộp nằm ở đâu, khi nào mất? → Redis, TTL tới hết ngày UTC; nếu miss thì đếm lại từ DB.
 4. Severity/bounty có ảnh hưởng quota không? → Không — quota chỉ phụ thuộc Signal.
 
-## Chặng 5 — Rate limit 3 lớp & cache: `middleware/rateLimit.js`, `src/redis.js` ✅
+---
 
-### 1. Ba lớp bảo vệ, ba mục đích khác nhau
+# CHẶNG 5 — RATE LIMIT 3 LỚP & CACHE (`middleware/rateLimit.js`, `src/redis.js`)
+
+## 1. Ba lớp bảo vệ, ba mục đích khác nhau
 
 | Lớp | Key Redis | Ngưỡng | Chống gì |
 |---|---|---|---|
@@ -660,20 +689,20 @@ Chi tiết:
 - Lớp 2: `assertLoginAllowed` (chạy trước khi so mật khẩu) / `recordLoginFailure` (khi sai) / `clearLoginFailures` (khi đúng).
 - Lớp 3: đã học ở Chặng 4.
 
-### 2. Vì sao **fail-open**?
+## 2. Vì sao **fail-open**?
 
 Triết lý: *thà cho request đi qua, còn hơn chặn nhầm người dùng thật khi hạ tầng phụ trợ gặp sự cố*. Mọi hàm trong `redis.js` đều "ăn lỗi" và trả `null`/`false` thay vì ném lỗi. Khi Redis chết:
 - **Cache** = miss → đọc thẳng Postgres (chậm hơn nhưng vẫn đúng).
 - **Rate limit** = cho qua.
 
-### 3. Cache: nhớ tạm + cơ chế "version" để vô hiệu
+## 3. Cache: nhớ tạm + cơ chế "version" để vô hiệu
 
 - Danh sách / facets / weaknesses: key `reports:v2:<version>:<viewer>:<filters>` (TTL 30s); `reports:version` là bộ đếm **INCR, không TTL**.
 - Mọi thao tác **ghi** gọi `bumpReportsVersion()` → version tăng → key cũ **tự bị bỏ qua**; không cần biết key nào đang tồn tại.
 - Leaderboard `lb:reputation` / `lb:signal` (TTL 60s) và profile `user:stats:<userId>` (TTL 60s) bị **`cacheDel` ngay** khi có action.
 - Cache **tách theo người xem** (guest / user / admin) vì kết quả phụ thuộc quyền xem report SPAM.
 
-### 4. Kết quả thật (demo)
+## 4. Kết quả thật (demo)
 
 **Cache:**
 | Hành động | Key sinh ra (TTL) |
@@ -691,13 +720,7 @@ Triết lý: *thà cho request đi qua, còn hơn chặn nhầm người dùng t
 | Redis chết (`docker stop`) | `GET /api/reports` và `POST /login` vẫn **200** (fail-open) |
 | Redis sống lại (`docker start`) | client tự reconnect; counter cũ (>300) còn trong cùng khung nên vẫn có thể **429** tới khi hết khung (hoặc flush Redis) |
 
-### 5. Câu hỏi kiểm tra
-1. Vì sao chọn fail-open? → Thà cho qua hơn chặn nhầm người dùng khi hạ tầng phụ trợ sự cố.
-2. Vì sao cache dùng "version" thay vì xoá từng key? → Không cần biết key nào tồn tại; chỉ cần INCR version.
-3. Khi nào `lb:*` và `user:stats:*` bị xoá? → Ngay sau mỗi action (`cacheDel` trong `POST /:id/actions`).
-4. Vì sao cache phải tách theo người xem? → Vì kết quả phụ thuộc quyền xem SPAM (admin/chủ nick/khách).
-
-### 6. `trust proxy` — ✅ đã bật trong code
+## 5. `trust proxy` — đã bật trong code
 
 Khi chạy sau **reverse proxy** (bản demo có `nginx` trong `frontend/nginx.conf`), kết nối TCP tới Express mang **IP nội bộ của proxy** (dạng `172.x`), không phải IP thật của người dùng. Nếu Express không tin proxy (`trust proxy = false` mặc định) thì `req.ip` trả về IP của proxy → **lớp 1** (`apiRateLimit`, key `api:<ip>:<window>`) dùng **chung một rổ** cho mọi người → một người vượt 300 req/60s là **cả hệ thống bị 429** ("bị khoá lây").
 
@@ -714,15 +737,185 @@ app.set('trust proxy', 1); // tin đúng 1 lớp proxy (nginx) -> req.ip = IP th
 
 **Kiểm chứng end-to-end (đã test xuyên nginx của bản demo):** container nginx có IP `172.19.0.2`, nhưng key rate limit tạo ra là `api:172.19.0.1:<window>` — tức **IP thật mà nginx thấy**, không phải IP container. Gửi kèm `X-Forwarded-For` giả (`203.0.113.7`, `198.51.100.1/.2`) vẫn cho **đúng cùng một key** → XFF giả không lừa được, không thể né rate limit.
 
-## Chặng 6 — Frontend: `App.jsx`, `auth/AuthContext.jsx`, `api/client.js`, `pages/*`
-Luồng dữ liệu, `queryParser.js`, `lib/stateMachine.js`, privacy SPAM.
+---
 
-## Chặng 7 — Smoke test & seed: `backend/scripts/smoke.js`, `prisma/seed.js`, `bench/`
-63 check = "đặc tả sống"; seed tất định; benchmark k6.
+# CHẶNG 6 — FRONTEND: ROUTING, AUTH, SANITIZE, MARKDOWN & SEARCH
+
+## 1. Bức tranh tổng thể
+`main.jsx` lồng các Provider theo thứ tự: **QueryClientProvider** (cache dữ liệu API) → **BrowserRouter** (điều hướng URL) → **AuthProvider** (ai đang đăng nhập) → **App** (các route).
+`App.jsx`: 5 trang trong Layout (`/`, `/cases/:id`, `/submit`, `/leaderboard`, `/u/:username`) + 2 trang ngoài Layout (`/login`, `/register`); `/submit` bọc `RequireAuth` — chưa đăng nhập thì đá về `/login` (nhớ vị trí cũ để quay lại sau khi đăng nhập).
+
+## 1b. Cơ chế luồng trang (routing) — giải thích kỹ
+
+**Chuỗi khởi động:**
+```
+index.html → main.jsx → QueryClientProvider → BrowserRouter → AuthProvider → App
+                        (cache API)            (quản lý URL)    (ai đăng nhập)   (bảng route)
+```
+
+**Bảng route nằm ở `App.jsx`**, điểm mấu chốt là **route lồng nhau**:
+
+```jsx
+<Route element={<Layout />}>                          {/* khung chung: header + rail */}
+  <Route index element={<DashboardPage />} />         {/* đường "/" */}
+  <Route path="cases/:id" element={<CasePage />} />   {/* đường "/cases/abc" */}
+  <Route path="submit" element={<RequireAuth><SubmitPage /></RequireAuth>} />
+</Route>
+<Route path="login" element={<LoginPage />} />         {/* KHÔNG có Layout */}
+```
+
+`<Layout>` chứa `<Outlet />`: hãy tưởng tượng **Layout là cái khung**, `Outlet` là **cái lỗ khoét** — React Router nhét trang con khớp URL vào lỗ đó. Đổi trang → chỉ ruột `Outlet` thay, header/rail đứng yên, không reload cả trang. (Layout còn dùng `key={location.pathname}` để mỗi lần đổi trang chạy animation `page-enter`.)
+
+**Các "đồ nghề" điều hướng:**
+
+| Thứ | Nghĩa | Dùng ở đâu |
+|---|---|---|
+| `<Link to>` | Thẻ `<a>` thông minh: đổi URL **không reload** | Logo, report card, username |
+| `<NavLink>` | Như Link, thêm biết mình đang active (`isActive`) | Rail icon, menu mobile |
+| `useNavigate()` | Đổi trang **bằng code** | Sau logout (`navigate('/')`), sau login |
+| `<Navigate to>` | Đổi trang **ngay khi render** | `RequireAuth`, đường dẫn `*` |
+| `useParams()` | Đọc phần động của URL | `cases/:id` → `id`, `u/:username` → `username` |
+| `useLocation()` | URL hiện tại + dữ liệu kèm (`state`) | Animation `key={pathname}`, nhận `state.from` |
+| `useSearchParams()` | Đọc/ghi `?query=...` | *(dự án KHÔNG dùng — bộ lọc Dashboard giữ trong state của trang)* |
+
+**Walkthrough 1 — bấm 1 report card:**
+```
+Link to="/cases/abc"  →  URL đổi  →  router khớp Route "cases/:id"
+  → Layout render (header/rail giữ nguyên)  →  nhét <CasePage/> vào <Outlet/>
+    → CasePage: useParams().id = "abc"  →  useQuery(['case','abc'])  →  GET /api/reports/abc
+```
+
+**Walkthrough 2 — vào `/submit` khi chưa đăng nhập:**
+```
+RequireAuth:  isLoading? → hiện Spinner
+              !user?     → <Navigate to="/login" state={{ from: location }} replace />
+LoginPage:    đăng nhập xong → navigate(location.state?.from?.pathname || '/', { replace: true })
+              → quay lại ĐÚNG /submit; replace=true để bấm Back không về lại trang login
+```
+
+**Vì sao gọi là SPA?** Chỉ có **một** `index.html`; đổi trang là React thay DOM chứ không xin lại HTML. Nginx/Vite trả `index.html` cho mọi đường dẫn (`try_files ... /index.html`), còn việc "chia trang" do React Router làm ngay trong trình duyệt.
+
+## 2. Gọi API — `frontend/src/api/client.js`
+- Mọi request dùng đường **tương đối** `/api/...` + `credentials: 'include'` (gửi kèm cookie phiên). Dev: Vite proxy; Demo: nginx proxy → **cùng origin** → không dính CORS.
+- Backend trả lỗi `{ error }` → bọc thành `ApiError` (kèm `.status`), nhờ đó `AuthContext` biết `err.status === 401` nghĩa là "chưa đăng nhập".
+
+## 3. Đăng nhập — `frontend/src/auth/AuthContext.jsx`
+- `useQuery(['me'])` gọi `GET /auth/me` (cache `staleTime` 5 phút); gặp 401 → trả `null` (không coi là lỗi).
+- `login` → gọi API rồi `invalidateQueries(['me'])`; `logout` → `setQueryData(['me'], null)` **ngay** (cho UI đổi tức thì, tránh "đơ") + dọn cache các query khác.
+
+## 4. Sanitize 2 tầng — chống XSS
+
+| Tầng | File | Việc |
+|---|---|---|
+| **Server** (trước khi LƯU) | `backend/src/services/sanitize.js` | `sanitize-html` với `allowedTags: []` → xoá **sạch mọi thẻ HTML**; `nonTextTags: [script, style…]` → xoá **cả nội dung bên trong** |
+| **Client** (khi HIỂN THỊ) | `frontend/src/components/Markdown.jsx` | react-markdown (mặc định không render HTML thô) + `rehype-sanitize` |
+
+**Demo thật:** nộp report chứa `<script>alert('xss')</script>`, `<img src=x onerror=alert(1)>`, `<a href="javascript:alert(2)">click me</a>`:
+- DB lưu: `## Proof of concept … click me … Markdown **van giu**.` — script/img biến mất hoàn toàn, **chữ** của thẻ `<a>` giữ lại, Markdown nguyên vẹn.
+- Trang Case render đúng như chữ thường, **không có script nào chạy**.
+
+![Case XSS đã sanitize](images/case-xss-sanitized.png)
+
+## 5. Markdown & CodeBlock khi hiển thị
+`Markdown.jsx` thay thẻ `<pre>` bằng `CodeBlock`: header `</> Code · <size>`, nút **wrap / copy / collapse**, gutter **số dòng**.
+
+![Case có code block](images/case-code-block.png)
+
+## 6. Cú pháp tìm kiếm — `frontend/src/lib/queryParser.js`
+Chuyển qua lại 3 dạng: **chuỗi người dùng gõ** ↔ **object filters** ↔ **query params gửi API**.
+- `parseQuery("(severity:HIGH AND weakness:(\"Reflected XSS\")) login")` → `{ severity: 'HIGH', weakness: 'Reflected XSS', q: 'login' }`.
+- Alias kiểu HackerOne: `cwe` → weakness; `total_awarded_amount` → bounty; bounty hỗ trợ `>`, `>=`, `<`, `<=`, `=`.
+- Key lạ / giá trị sai → gom vào **từ khoá tìm kiếm** (`filters.q`).
+- `state` cụ thể "thắng" `disclosed` (tránh 2 điều kiện mâu thuẫn).
+
+## 6b. Cơ chế tìm kiếm — từ ô search tới Postgres
+
+**Chuỗi 6 bước:**
+1. **Gõ** vào ô search (Dashboard). Có **debounce 350ms** (ngừng gõ mới truy vấn) — ví dụ:
+   `(severity:HIGH AND weakness:("Reflected XSS")) login`
+2. **`queryParser.parseQuery`** (frontend) tách thành object filters: `{ severity:'HIGH', weakness:'Reflected XSS', q:'login' }`.
+   - Alias: `cwe`→weakness, `total_awarded_amount`→bounty; bounty hỗ trợ `> >= < <= =`.
+   - Key/giá trị lạ → gộp vào **`q`** (từ khoá thường). `state` cụ thể thắng `disclosed`.
+3. **`toApiParams`** → query string: `?severity=HIGH&weakness=Reflected%20XSS&q=login&sort=newest&page=1&pageSize=10`.
+4. **`parseReportFilters`** (backend) validate **thủ công**: severity/state phải thuộc enum, `bountyMin/Max` là số nguyên ≥0, `q` ≤200 ký tự, `weakness` ≤100 → sai trả 400.
+5. **`buildReportWhere`** → object `where` của Prisma:
+   - `q` → **`OR` 3 trường** `{ contains, mode:'insensitive' }` trên `weakness`, `shortDescription`, `target` ⇔ SQL **`ILIKE '%q%'`** — **không tìm trong `details`**.
+   - `weakness` → `{ equals, mode:'insensitive' }`; `severity`/`state` → bằng đúng; `bounty` → `gte`/`lte`.
+   - Cộng thêm **visible SPAM** (AND theo người xem) và **cursor** nếu phân trang keyset.
+6. **Prisma → SQL**: `WHERE … ORDER BY "createdAt" DESC, id DESC LIMIT n`.
+   - Phân trang: `sort=oldest` dùng OFFSET (`skip/take`); `sort=newest` dùng **keyset cursor** `"<createdAt ISO>_<id>"` (nhanh, không lệch khi có report mới).
+   - Kết quả cache 30s theo `reports:v2:<version>:<viewer>:<filters>`.
+
+**Đây là kiểu truy vấn gì?** = **substring search (`ILIKE '%…%'`) + so sánh bằng/khoảng + ORDER BY + LIMIT**.
+Không phải full-text search (Postgres `tsvector`, tìm theo *từ*). Ưu: khớp chuỗi con tuỳ ý; nhược: cần **GIN pg_trgm** mới có index, và nếu thêm `details` vào `q` sẽ nặng.
+
+**Index nào đỡ việc này?**
+- `ILIKE '%…%'` **không dùng được B-tree thường** → 3 index **GIN pg_trgm** (`Report_weakness_trgm_idx`, `shortDescription`, `target`).
+- Lọc `state` + sắp `createdAt` → composite `(state, createdAt)`.
+- Bảng nhỏ (100 report) Postgres chọn **quét cả bảng** vì rẻ; index phát huy khi dữ liệu lớn (xem Chặng 7 benchmark).
+
+## 7. Privacy SPAM trên UI
+Backend là nơi **quyết định** (lọc theo người xem; SPAM ẩn với người ngoài, chi tiết/events trả 404). Frontend chỉ hiển thị đúng những gì API trả về — không cần (và không nên) tự che giấu ở client.
+
+### Câu hỏi kiểm tra
+1. Vì sao gọi API bằng đường tương đối `/api`? → Cùng origin nhờ Vite/nginx proxy → không CORS, cookie tự gửi kèm.
+2. Vì sao sanitize ở **server** dù client đã an toàn? → Client có thể bị sửa/bỏ qua; dữ liệu bẩn nằm trong DB sẽ hại **mọi người xem sau** (stored XSS).
+3. `<a href="javascript:...">click me</a>` sau sanitize còn gì? → Chỉ còn chữ `click me`.
+4. Vì sao logout phải `setQueryData(['me'], null)`? → Để UI đổi ngay, không chờ refetch.
 
 ---
 
-# PHẦN E — Phụ lục: chạy & deploy (dev vs demo container)
+# CHẶNG 7 — KIỂM CHỨNG: SMOKE TEST, SEED & BENCHMARK
+
+> **Không trùng với Chặng 1–6:** chặng này không dạy lại nghiệp vụ. Nó dạy cách hệ thống **tự chứng minh mình đúng** (test), **có dữ liệu chuẩn để chạy** (seed) và **được đo lường** (benchmark). Các luật đã học quay lại đây dưới dạng "phép thử".
+
+## 1. Smoke test — "đặc tả sống" (`backend/scripts/smoke.js`)
+- **63 phép thử end-to-end** chạy qua HTTP như người dùng thật; mỗi `check(...)` là **một luật** của hệ thống.
+- Các nhóm (khớp 6 chặng đã học): `0` Health · `1` Register · `2` Tạo report · `3` Timeline & state machine · `4` List & search · `4b` Filters/facets · `4c` Privacy SPAM · `5` Leaderboard/Profile · `5b` Profile editor · `6` Logout.
+- Chạy: `npm run smoke` → kỳ vọng **63 PASS / 0 FAIL** (vừa chạy thật: đúng).
+- Script **tự tạo tài khoản mới** mỗi lần chạy → nhớ dọn sau: `npm run seed:reset` + flush Redis.
+
+## 2. Seed — "đặc tả dữ liệu" (`backend/prisma/seed.js`)
+- **Tất định**: PRNG cố định (mulberry32, seed `20261001`) → chạy lại ra **cùng bộ dữ liệu** → test/benchmark **tái lập được**.
+- 11 tài khoản; ngày tham gia ghim công thức `620 + i*9` ngày (admin `720`); `reporter10` signal âm, `reporter9` signal 0; mọi report có code block PoC; SPAM severity `NONE`.
+- `seed` tự bỏ qua nếu đã có report; `seed:reset` = `--force` (xoá report/ledger/event + user lạ, **giữ avatar**).
+
+## 3. Seed benchmark — dữ liệu lớn (`backend/prisma/seed-bench.js`)
+- Mặc định **2.000 user + 500.000 report**; kỹ thuật: `INSERT … SELECT generate_series` theo batch 50k, `synchronous_commit = off`, `ANALYZE` sau khi seed.
+- `seed:bench` · `seed:bench -- --users=… --reports=…` · `seed:bench:clean`.
+
+## 4. Benchmark k6 (`bench/k6/*.js`)
+- 5 kịch bản: `dashboard-search`, `case-detail`, `leaderboard`, `login-bruteforce`, `api-spam`.
+- 3 mức: v0 (gốc) → v1 → v2 (đủ tối ưu); chạy ở 2 chế độ cache/nocache (`serve:bench`, `serve:bench:nocache`).
+- Kết quả lưu `bench/results/*.json` → đọc bằng `npm run bench:results`.
+
+## 5. Bảng kết quả đã ghi (vừa in lại bằng `bench:results`)
+```
+File                          | p95(ms) | med(ms) | max(ms) | requests | RPS   | error%
+v0-leaderboard                |  1263.1 |   678.2 |  1533.5 |     1498 |  24.8 |   0.00
+v1-leaderboard                |     3.0 |     2.3 |   351.7 |     3474 |  57.6 |   0.00
+v2-leaderboard-nocache        |    47.8 |    12.8 |    88.9 |     3363 |  55.8 |   0.00
+v2-leaderboard-cache          |     3.0 |     2.3 |    41.2 |     3474 |  57.5 |   0.00
+v0-search / v2-search-nocache | 9.2 / 9.8 (ổn định)
+v0-case / v2-case-cache       | 5.9 / 5.6 (ổn định)
+security-bruteforce           |     4.5 |     2.5 |    82.9 |     1210 |  48.2 | 100.00
+security-spam                 |     4.6 |     2.9 |    46.7 |    51698 | 2584.7|  99.42
+```
+
+## 6. Cách đọc bảng (3 điểm hay bị hỏi)
+- `security-*` error% cao là **đúng mục tiêu**: k6 coi request bị **429 là "failed"** — benchmark đang đo **khả năng chặn** (brute-force bị chặn 100%, spam bị chặn 99.42%).
+- **Leaderboard là "thắng lớn"**: v0 p95 **1263ms** → v2 nocache **47.8ms** (~26×) nhờ denormalize `User.reputation` + index; bật cache còn **3.0ms**.
+- Search/Case **ổn định, không hồi quy** (5–10ms). `p99 = NaN` vì chưa chạy kèm `--summary-trend-stats` (có ghi chú ngay dưới bảng).
+
+### Câu hỏi kiểm tra
+1. Vì sao smoke tự tạo user mới mỗi lần? → Chạy lại không trùng, không phụ thuộc dữ liệu cũ.
+2. Chạy xong smoke nên dọn gì? → `seed:reset` + flush Redis (bộ đếm/quota nằm ở Redis).
+3. Vì sao seed phải tất định? → Để kết quả test/benchmark **tái lập** và so sánh công bằng giữa các lần chạy.
+4. Vì sao `error%` của `security-*` cao mà vẫn coi là đạt? → Đó chính là thứ được đo: **chặn được** brute-force/spam.
+
+---
+
+# PHỤ LỤC — CHẠY & DEPLOY (dev vs demo container)
 
 ## Dev: chạy tay trên máy
 
@@ -759,7 +952,7 @@ Trình tự khi chạy `docker compose -p vulncell-demo -f docker-compose.demo.y
 Chi tiết thiết kế đáng nhớ:
 
 - **Seed chạy mỗi lần container khởi động nhưng tự bỏ qua nếu đã có data** (`if (existing > 0 && !force) return`) → restart không nhân đôi; muốn tạo lại mới cần `--force`.
-- Dữ liệu nằm ở volume riêng `vulncell_demo_db_data` → `down` không mất, chỉ `down -v` mới xoá; không lẫn với data dev.
+- Dữ liệu nằm ở volume riêng `vulncell-demo_demo_db_data` (project `vulncell-demo` + volume `demo_db_data`) → `down` không mất, chỉ `down -v` mới xoá; không lẫn với data dev (`vulncell_db_data`).
 - `restart: unless-stopped` → Docker bật lại là container **tự lên lại**.
 - Env demo nằm **inline trong compose** (`JWT_SECRET`, `COOKIE_NAME: vc_demo_token`, `FRONTEND_URL`, `RATE_LIMIT_DISABLED`, `COOKIE_SECURE`) → không cần file `.env` trong container.
 - Sửa code → chạy lại `up -d --build` để demo ăn bản mới.
@@ -771,14 +964,14 @@ Chi tiết thiết kế đáng nhớ:
 | Ai chạy Node? | Trên máy bạn | Trong container |
 | Lệnh | 5 bước ở trên | 1 lệnh `up -d --build` |
 | Migration | `migrate dev` (tạo + áp) | `migrate deploy` (chỉ áp) |
-| Dữ liệu | volume `db_data` | volume `demo_db_data` (tách biệt) |
+| Dữ liệu | volume `vulncell_db_data` | volume `vulncell-demo_demo_db_data` (tách biệt) |
 | Cổng lộ ra | 4000, 5173, 5432, 6379 | chỉ 8080 |
 
 ---
 
-# PHẦN F — Checklist "hiểu thật" & lịch học
+# CHECKLIST ÔN THI
 
-## Câu hỏi lớn (trả lời được là hiểu hệ thống)
+## 8 câu hỏi lớn (trả lời được là hiểu hệ thống)
 1. Vẽ sơ đồ 1 report: `PENDING → TRIAGED → RESOLVED` — ai làm, ledger ± mấy điểm, event gì, cache nào bị ảnh hưởng.
 2. Vì sao Signal và Reputation tách rời?
 3. 3 lớp rate limit: key, cửa sổ, ngưỡng, hành vi khi Redis chết.
@@ -787,16 +980,3 @@ Chi tiết thiết kế đáng nhớ:
 6. Cache invalidation: cơ chế "version" + `cacheDel` dùng ở đâu?
 7. Kể tên từng chặng của 1 request browser → Express → route → Prisma → response.
 8. Dev vs demo khác nhau thế nào khi khởi động?
-
-## Lịch học gợi ý
-
-| Thời lượng | Việc |
-|---|---|
-| ~45' | Phần A + B (khái niệm nền + bản đồ) |
-| ~60' | Chặng 1 Trạm 1–2 ✅ |
-| ~45' | Chặng 1 Trạm 3–5 (auth, middleware, lỗi) ✅ |
-| ~60' | Chặng 2–3 (dữ liệu + state machine) |
-| ~60' | Chặng 4–5 (reputation + rate limit/cache) |
-| ~45' | Chặng 6–7 (frontend + smoke/seed) |
-
-> **Chặng 1 đã hoàn thành.** Bước kế tiếp được khuyên: **Chặng 2 — mô hình dữ liệu (`backend/prisma/schema.prisma`)**, rồi **Chặng 3 — `stateMachine.js`** (ngắn nhất nhưng nhiều luật nhất).
