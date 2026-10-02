@@ -3,7 +3,7 @@
 Nền tảng công bố lỗ hổng bảo mật kiểu HackerOne thu nhỏ — project môn ICT3.005 Web Application.
 Hacker nộp report → Admin triage/đổi trạng thái/cấp bounty; có Reputation, Signal, Leaderboard, Profile.
 
-> Tài liệu: `docs/plan.md` (kế hoạch triển khai) · `docs/decisions.md` (chốt đặc tả) · `docs/api.md` (hợp đồng API) · `docs/benchmark-guide.md` (cách chạy benchmark) · `docs/benchmark-report.md` (báo cáo kết quả đo) · `docs/sample-reports.md` (mẫu report để submit thử) · `docs/deploy-linux.md` (chạy demo trên Linux/Ubuntu Server).
+> Tài liệu: `docs/plan.md` (kế hoạch triển khai) · `docs/decisions.md` (chốt đặc tả) · `docs/api.md` (hợp đồng API) · `docs/benchmark-guide.md` (cách chạy benchmark) · `docs/benchmark-report.md` (báo cáo kết quả đo) · `docs/sample-reports.md` (mẫu report để submit thử) · `docs/deploy-linux.md` (chạy demo trên Linux/Ubuntu Server) · `docs/deep-dive-guide.md` (lộ trình đọc hiểu logic) · `docs/demo-runbook.md` (kịch bản demo + slide).
 
 ## Quickstart
 

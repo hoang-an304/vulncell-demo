@@ -172,6 +172,28 @@
 
 ---
 
+## 8. Raw summary (re-generated 2026-10-03, `npm run bench:results`)
+
+| File | p95 (ms) | med (ms) | max (ms) | requests | RPS | error % |
+|---|---|---|---|---|---|---|
+| security-bruteforce | 4.5 | 2.5 | 82.9 | 1,210 | 48.2 | 100.00* |
+| security-spam | 4.6 | 2.9 | 46.7 | 51,698 | 2,584.7 | 99.42* |
+| v0-case | 5.9 | 4.2 | 24.4 | 5,595 | 92.9 | 0.00 |
+| v0-leaderboard | 1,263.1 | 678.2 | 1,533.5 | 1,498 | 24.8 | 0.00 |
+| v0-search | 9.2 | 6.8 | 29.9 | 3,221 | 53.4 | 0.00 |
+| v1-case | 6.2 | 4.3 | 56.4 | 5,589 | 93.0 | 0.00 |
+| v1-leaderboard | 3.0 | 2.3 | 351.7 | 3,474 | 57.6 | 0.00 |
+| v1-search | 4.3 | 3.3 | 27.7 | 3,255 | 54.0 | 0.00 |
+| v2-case-cache | 5.6 | 4.1 | 58.3 | 5,601 | 92.8 | 0.00 |
+| v2-case-nocache | 6.6 | 4.4 | 17.1 | 5,585 | 92.9 | 0.00 |
+| v2-leaderboard-cache | 3.0 | 2.3 | 41.2 | 3,474 | 57.5 | 0.00 |
+| v2-leaderboard-nocache | 47.8 | 12.8 | 88.9 | 3,363 | 55.8 | 0.00 |
+| v2-search-cache | 7.9 | 3.4 | 33.9 | 3,252 | 54.2 | 0.00 |
+| v2-search-nocache | 9.8 | 7.4 | 32.2 | 3,215 | 53.5 | 0.00 |
+
+`*` Security scenarios count blocked requests (401/429) as "failed" by design — a high error rate means the protection is working.
+> Numbers match Section 2 (same raw files); the `error %` column is the raw k6 `http_req_failed` metric.
+
 ## Phụ lục A — Lệnh tái lập toàn bộ số đo
 
 ```powershell

@@ -66,6 +66,8 @@ Chốt theo `database và api.docx`; proj.docx ghi 1/2/unlimited → bản docx 
 
 `RATE_LIMIT_DISABLED=true` để tắt cả 3 lớp khi chạy load test (k6/JMeter).
 
+- **`trust proxy = 1` (đã bật trong `app.js`):** chạy sau nginx (bản demo) phải trả `req.ip` là **IP thật của client** — nếu không, lớp 1 (`api:<ip>:<window>`) dùng chung một rổ cho mọi người và một người vượt trần sẽ khoá lây cả hệ thống. Chỉ tin **đúng 1 lớp** proxy; không dùng `true` (tránh client giả mạo `X-Forwarded-For`).
+
 ## 6. Endpoint chốt (bổ sung so với `docs/api.md`)
 
 | Endpoint | Ghi chú |
@@ -129,6 +131,8 @@ Stats (reputation/signal/total bounty) hiển thị công khai.
 - Cột `User.reputation` denormalized: cập nhật cùng transaction khi ghi `ReputationLedger` + backfill, leaderboard đọc 1 cột. **Mọi đường ghi ledger đều phải cập nhật cột** (actions của admin lẫn `seed.js`); `seed:reset` xoá sạch report/ledger/event + tài khoản lạ ngoài 11 tài khoản demo (rác smoke/bench) rồi reset cột về 0 trước khi seed lại — nếu không sẽ lệch.
 
 `CACHE_DISABLED=true` trong `.env` để đo baseline không cache khi benchmark (kết hợp `RATE_LIMIT_DISABLED=true`).
+
+**Khôi phục index (2026-10-02):** 6 index tối ưu từng được tạo bằng SQL tay ở migration `perf_optimizations` (pg_trgm/GIN + 3 composite) đã bị migration sau DROP do **drift** (không khai báo trong `schema.prisma`). Đã khai báo lại trong schema và khôi phục bằng migration `20261002085407_restore_perf_indexes`; từ nay Prisma giữ các index này khớp schema.
 
 ## 11. UI chốt
 

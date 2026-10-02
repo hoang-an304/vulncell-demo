@@ -1,85 +1,152 @@
-# Runbook demo 5–7 phút — VulnCell
+# VulnCell — Demo Runbook (5–7 minutes)
 
-> Mục tiêu: trong 1 lượt 5–7 phút, thể hiện **đủ**: giới thiệu đề tài → kiến trúc & luồng dữ liệu → bảo mật → hiệu năng (slide), rồi **demo chạy thật** phần đã trình bày.
-> **Thứ tự đã chốt: chiếu HẾT slide trước, demo SAU** (để người nghe hiểu thiết kế trước khi xem chạy).
-> Nguyên tắc: **mỗi màn hình chỉ nói 1 ý**, số liệu lấy từ tài liệu (không bịa).
+> Presentation language: **English**. This document contains the **speaking script** and the **slide deck content**.
+> Order: **all slides first, then the live demo** — the audience understands the design before seeing it run.
+> Total ≈ 6 minutes at a normal speaking pace (no fixed timeline; follow the order).
+
+## Evaluation criteria coverage
+
+| Requirement | Covered by |
+|---|---|
+| **Standard**: complete interface + 2–3 key features | Slides S1/S5 + live demo steps 1–4 (auth, submit, triage) |
+| **Advanced**: 4–5 main features + advanced functionality (e.g., optimize performance, benchmarking, stress testing) | Slides S2–S4 + demo + the benchmark and stress-test numbers below |
+
+**5 main features**
+1. Authentication & role-based access (hacker / admin)
+2. Vulnerability report submission (Markdown, code blocks, sanitization, Signal-based quota)
+3. Triage workflow — 8-state state machine, severity, bounty, audit timeline (transactional)
+4. Reputation & Signal — ledger, profile stats, leaderboard
+5. Discovery — HackerOne-style search, filters/facets, pagination, SPAM privacy
+
+**Advanced capabilities**
+- 3-layer rate limiting (**stress-tested** with k6)
+- Redis caching with **version-based invalidation**
+- Database optimization: denormalized reputation, composite + **GIN trigram** indexes
+- **Benchmarking**: k6 on 500,000 reports (v0 → v2)
+- Security stress tests: brute-force login, API spam
+- 2-layer XSS sanitization; hardened deployment (nginx + `trust proxy`)
 
 ---
 
-## 0) Chuẩn bị trước (T-15 phút)
+## 0. Pre-flight (15 minutes before)
 
 ```bash
-# 1) Bật demo (docker tự chạy migrate + seed)
+# 1) Start the demo stack (migrate + seed run automatically inside the container)
 docker compose -p vulncell-demo -f docker-compose.demo.yml up -d --build
-curl http://localhost:8080/health          # {"ok":true}
+curl http://localhost:8080/health
 
-# 2) Dữ liệu sạch (11 user / 100 report, giữ avatar)
+# 2) Reset to clean data (11 users / 100 reports, uploaded avatars kept)
 docker exec vulncell-demo-backend-1 node prisma/seed.js --force
 docker exec vulncell-demo-redis-1 redis-cli flushdb
-
-# 3) (Tuỳ chọn) nếu mở link cho cả lớp cùng vào thì khởi động lại tunnel và lấy URL mới
-D:\cloudflared\cloudflared.exe tunnel --url http://localhost:8080 --no-autoupdate
 ```
 
-- Mở **2 cửa sổ**: cửa sổ thường (reporter) + **cửa sổ ẩn danh** (đăng nhập sẵn `admin` — 2 cookie độc lập, không phải logout qua lại).
-- Copy sẵn đoạn report ở **mục 4** vào clipboard.
-- Zoom trình duyệt 110–125%, tắt DevTools + thông báo, chỉ mở 2–3 tab.
-- Nếu **chia link tunnel cho cả lớp**: nên nâng `RATE_LIMIT_API_MAX: "2000"` trong `docker-compose.demo.yml` rồi `up -d` (vì qua tunnel mọi người dùng chung 1 "rổ" IP; 300/phút có thể bị chặn oan khi cả lớp cùng bấm).
+- Open **two windows**: a normal window (reporter) and an **incognito window pre-logged in as `admin`** (separate cookie jars — never share one window between two accounts).
+- Copy the **sample report** (Section 3) to the clipboard.
+- Browser zoom 110–125%; close DevTools and notifications.
+- Sharing the link with the class? Restart the tunnel and (recommended) raise `RATE_LIMIT_API_MAX` to `"2000"` in `docker-compose.demo.yml`, then `up -d` — viewers behind the tunnel share one IP bucket.
+- Optional: keep a second screen with `docs/benchmark-report.md` or Prisma Studio.
 
 ---
 
-## 1) Slides TRƯỚC (2:30–3:00) — 5 slide (S0 → S4)
+## 1. Speaking script (English)
 
-> **Chiếu hết slide rồi mới demo** — người nghe hiểu bối cảnh/thiết kế trước khi xem chạy thật.
+### Opening — 20 s
+> "Good morning everyone. My name is … and this is **VulnCell** — a bug-bounty platform in the style of HackerOne. Hackers submit vulnerability reports; staff triage them, award bounties, and reputation is tracked on a leaderboard. The presentation has two parts: the design on slides, then a live demo."
 
-**S0. Giới thiệu đề tài** (30–40s) — *slide mở đầu*
-- **VulnCell** = nền tảng bug bounty kiểu HackerOne: hacker nộp lỗ hổng → admin triage & trả thưởng → điểm uy tín + leaderboard.
-- 3 vai trò: **Guest** (xem công khai) · **Hacker** (nộp/comment) · **Admin/Staff** (duyệt, đổi state, cấp bounty).
-- Chức năng chính: đăng ký/đăng nhập · submit Markdown · **state machine 8 trạng thái** · bounty · **Reputation/Signal** · leaderboard · profile (avatar/bio) · tìm kiếm kiểu HackerOne.
-- Công nghệ: **React (Vite) + Express + Prisma/Postgres + Redis + Docker**, kèm **benchmark k6** và **smoke test 63 checks**.
-- Chốt: *"Bài gồm 2 phần: slide trình bày giải pháp kỹ thuật, sau đó là demo chạy thật."*
+### Slide S1 — Introduction — 30 s
+> "VulnCell has three roles: guests can browse public reports, hackers submit and comment, and admins triage, close and reward reports. The platform has five main features: authentication with role-based access; report submission with Markdown; a triage workflow with a state machine and bounties; a reputation system with a leaderboard; and search with filters. The stack is **React** on the front end, **Express + Prisma/PostgreSQL** on the back end, **Redis** for caching and rate limiting, and everything ships with **Docker**."
 
-**S1. Kiến trúc & luồng dữ liệu** (45–60s)
-- 3 tầng: **React SPA** (Vite dev / nginx demo) → **Express API** → **Postgres + Redis**.
-- 1 request: Browser → nginx proxy `/api` → cors → gzip → json → cookie → **rate limit 3 lớp** → route → `authenticate`/`validate` → handler → Prisma/Redis → JSON; lỗi đổ về error handler.
-- 4 bảng: `User`, `Report`, `ReportEvent` (timeline), `ReputationLedger` (sổ điểm) + **8 state** (PENDING → TRIAGED → disclosed).
+### Slide S2 — Architecture & data flow — 40 s
+> "The system has three layers: the React SPA, the Express API, and PostgreSQL plus Redis. A request travels through a proxy, then an express middleware chain — CORS, compression, JSON parsing, cookies and rate limiting — then the route, authentication and validation, the handler, and finally the database or cache.
+> The data model has four tables: **User**, **Report**, **ReportEvent** for the audit timeline, and **ReputationLedger**, an append-only points ledger. A report moves through **eight forward-only states**: from PENDING to TRIAGED, then to RESOLVED or another closed state. Only admins can move states, and every action is **one database transaction**."
 
-**S2. Bảo mật API** (30s)
-- JWT trong **cookie httpOnly** + sameSite; mật khẩu **bcrypt**; input **zod**.
-- **Rate limit 3 lớp**: IP 300/phút · login 5 sai/phút → khoá 15' · submit theo Signal.
-- **Sanitize 2 tầng** (server strip HTML + client rehype-sanitize) · **privacy SPAM** (người ngoài nhận 404).
-- **`trust proxy = 1`** sau reverse proxy (chống "khoá lây" cả hệ thống).
+### Slide S3 — Security — 35 s
+> "Security has five pillars. Passwords are **bcrypt-hashed**. Sessions are **JWTs stored in httpOnly cookies** — not in localStorage, so XSS cannot steal them. All input is validated with **zod**. All content is sanitized in **two layers**: the server strips every HTML tag before storing, and the client renders Markdown with a sanitizer on top. And there are **three rate-limit layers**: a global per-IP limit, a login limiter that locks after five failed attempts, and a submission quota based on Signal. Behind nginx we also enable `trust proxy`, so the limiter sees the real client IP."
 
-**S3. Tối ưu & Benchmark** (30s)
-- Denormalize `User.reputation` + index; composite index + **GIN pg_trgm**; cache "version" 30s + leaderboard/stats 60s + gzip; keyset pagination.
-- **Leaderboard p95: 1263ms → 47.8ms (~26×)**, bật cache còn 3.0ms; smoke test **63/63 PASS**.
+### Slide S4 — Performance & benchmarking — 35 s
+> "On performance: we denormalized the reputation column, added composite and GIN trigram indexes, introduced Redis caching with a version key, gzip and keyset pagination.
+> We benchmarked with **k6 on 500,000 reports**. The leaderboard went from **1,263 ms to 47.8 ms p95 without cache — about 26 times faster — and 3.0 ms with cache**. For security, we ran stress tests: brute-force login is blocked after five attempts, and the spam test served **51,698 requests at 2,585 requests per second**, with exactly 300 requests passing the per-IP cap — everything else was rejected without touching the database."
 
-**S4. Tổng kết giải pháp & hướng phát triển** (20s) — *slide cuối TRƯỚC demo*
-- Đã trình bày: kiến trúc 3 tầng · bảo mật (auth + rate limit 3 lớp + sanitize) · hiệu năng (index/cache) · kiểm chứng (smoke 63/63 + benchmark).
-- Hướng phát triển: thông báo realtime, 2FA, lưu avatar lên S3/Cloud, full-text search.
-- Câu chuyển sang demo: *"Thiết kế là vậy — giờ em demo để thầy thấy nó chạy thật."*
+### Slide S5 — Summary & roadmap — 20 s
+> "To summarize: five main features — authentication, submission, triage, reputation and discovery — plus advanced engineering: three-layer rate limiting, caching, database optimization, and formal benchmarking and stress testing. Possible next steps are real-time notifications, two-factor authentication and object storage for avatars. Now let me show it running."
+
+### Live demo — ~3 minutes
+
+**Step 1 — Login lock (reporter5).**
+> Action: type `reporter5` with a wrong password, click **Log in** five times (the field keeps its value — just click again).
+> "This is the login rate limiter: five failed attempts per minute, per IP and username. The sixth attempt is blocked for fifteen minutes — the counter lives in Redis with a TTL, so it expires automatically."
+
+**Step 2 — Blocked submit (reporter10).**
+> Action: log in as `reporter10`; show the dimmed Submit button; open `/submit` (red banner); click Submit to trigger the 429.
+> "This account has a negative **Signal**, so submissions are disabled. Signal is the sum of reputation points over the last 365 days — deliberately separate from lifetime reputation, so old good scores cannot wash out recent spam."
+
+**Step 3 — Submit a report (reporter1).**
+> Action: log in as `reporter1`; open the profile to show **Signal 51**; open Submit; paste the sample report; create it.
+> "Signal is positive, so the daily quota allows this report. The server validates the payload with zod and strips HTML — note the malicious image tag in the report. The report is created in **PENDING**."
+
+**Step 4 — Admin triage (incognito window).**
+> Action: as `admin`, open the newest report; add a comment; set state **TRIAGED** with severity **HIGH**; then **RESOLVED** with a **$500** bounty.
+> "Severity can only be set from TRIAGED, and the bounty only when the report is RESOLVED. Each action is a single transaction: the report, the timeline event, the ledger entry and the denormalized reputation column update together — or not at all."
+
+**Step 5 — Back to reporter1.**
+> Action: reload the profile — Signal **51 → 58**; open the case — full timeline.
+> "Resolving the report added +7 points to the ledger, and Signal moved from 51 to 58. The timeline shows the full lifecycle: submitted, triaged, resolved, bounty. And the malicious tag is now harmless text — that is the two-layer sanitization."
+
+**Step 6 — (optional, if time allows) Leaderboard.**
+> Action: open `/leaderboard`.
+> "The leaderboard reads the denormalized column, so it stays fast even with half a million reports."
+
+### Closing — 15 s
+> "VulnCell implements a complete, end-to-end bounty workflow — secure by design and validated by tests: **63 of 63 smoke checks pass**, and the k6 benchmark and stress tests quantify the improvements. Thank you — I am happy to take questions."
 
 ---
 
-## 2) Live demo SAU slides (3–3,5 phút) — timeline
+## 2. Slide deck content (copy-paste)
 
-> Câu chuyển từ S4: *"Thiết kế là vậy — giờ em demo để thầy thấy nó chạy thật."*
+### Slide 1 — Title
+- **VulnCell** — A Bug-Bounty Platform (HackerOne-style)
+- Course / group / presenter
+- "Design + live demo"
 
-| Thời gian | Màn hình | Thao tác | Kết quả thấy được | Nói gì (1 ý) |
-|---|---|---|---|---|
-| 0:00–0:30 | Login (đang đăng xuất) | `reporter5` + sai mật khẩu, bấm **Log in** 5 lần (giữ nguyên ô, chỉ bấm lại) | Lần 6: **429** `Try again in 15 minute(s)` | "Lớp chặn thứ 2 trên slide: **5 sai/phút theo IP+user** → khoá 15 phút, đếm bằng Redis TTL" |
-| 0:30–1:00 | Đăng nhập `reporter10` | Navbar: nút Submit **mờ** → vào `/submit` thấy **băng đỏ** → bấm Submit → **429 signal âm** | Submit bị khoá | "**Signal âm → khoá nộp**; Signal = tổng điểm 365 ngày gần nhất — tách khỏi Reputation để không bị điểm cũ 'rửa'" |
-| 1:00–2:00 | Đăng xuất → `reporter1` | Profile xem **Signal trước (51)** → vào Submit → dán report mục 4 → **Create report** | Chuyển sang Case **PENDING**, code block hiện đúng | "Submit qua **zod + sanitize**, quota theo Signal; report mới luôn PENDING" |
-| 2:00–2:50 | **Cửa sổ ẩn danh: `admin`** | Mở report mới nhất → comment "Verified on staging" → **TRIAGED + severity HIGH** → sau đó **RESOLVED + bounty 500** | Badge đổi màu, timeline dài thêm | "Mỗi action là **1 transaction**: Report + Event + Ledger + cột reputation cùng xong hoặc cùng huỷ; severity chỉ từ TRIAGED, bounty chỉ khi RESOLVED" |
-| 2:50–3:20 | Quay lại cửa sổ reporter1 | Reload Profile → **Signal tăng +7** (51 → 58); mở Case | Timeline: `SUBMITTED → TRIAGED → RESOLVED → BOUNTY $500`; thẻ `<img>` thành chữ | "Timeline + sổ điểm sinh tự động; **sanitize** đã biến HTML độc hại thành chữ vô hại" |
-| 3:20–3:30 | nếu còn giờ | Mở `/leaderboard` | reporter1 tăng hạng | "Leaderboard đọc cột denormalized — nhanh, cập nhật cùng transaction" |
+### Slide 2 — Introduction
+- **What**: hackers report vulnerabilities; staff triage and reward; reputation and leaderboard.
+- **Roles**: Guest · Hacker · Admin (STAFF).
+- **5 main features**: authentication · submission (Markdown) · triage workflow · reputation & leaderboard · search & discovery.
+- **Stack**: React (Vite) · Express + Prisma/PostgreSQL · Redis · Docker.
 
-**Tổng: slides ~2:40 + demo ~3:20 + chốt ~0:20 ≈ 6 phút** — vừa khung 5–7 phút.
-**Bản 5 phút (nếu bị rút):** S0 nói gọn 20s; trong demo bỏ comment + bỏ leaderboard; giữ: khoá login → reporter10 bị chặn → submit → admin RESOLVED → signal tăng.
+### Slide 3 — Architecture & data flow
+- **3 layers**: React SPA → Express API → PostgreSQL + Redis.
+- **Request pipeline**: proxy → CORS → compression → JSON/cookie parsing → rate limit → route → auth/validation → handler → DB/cache.
+- **Data model (4 tables)**: `User`, `Report`, `ReportEvent` (timeline), `ReputationLedger` (points).
+- **State machine**: 8 forward-only states, admin-only transitions, every action = 1 transaction.
+
+### Slide 4 — Security
+- bcrypt password hashing; **JWT in httpOnly cookie**; zod input validation.
+- **Sanitization in 2 layers** (server strips HTML; client renders Markdown safely).
+- **Rate limiting in 3 layers** (IP / login / Signal) + `trust proxy` for real client IPs.
+- Privacy: SPAM reports are visible only to their owner and admins.
+
+### Slide 5 — Performance & benchmarking
+- Optimizations: denormalized reputation + composite & **GIN trigram** indexes; Redis cache with version key; gzip; keyset pagination.
+- Benchmark (k6, 500,000 reports):
+
+| Metric | v0 | v2 (no cache) | v2 (cache) |
+|---|---|---|---|
+| Leaderboard p95 | **1,263 ms** | **47.8 ms (~26×)** | **3.0 ms** |
+| Search / Case p95 | 9.2 / 5.9 ms | 9.8 / 6.6 ms | 7.9 / 5.6 ms |
+| Cold-miss max (leaderboard) | 1,533 ms | 88.9 ms | **41.2 ms** |
+
+- Security stress tests: brute-force → 1,205 × 429 after 5 tries; spam → 51,698 requests @ 2,585 RPS, exactly 300 passed.
+- Full data: `docs/benchmark-report.md`.
+
+### Slide 6 — Summary & roadmap
+- **5 main features** + advanced engineering (rate limiting, caching, DB optimization, benchmarking, stress testing).
+- Test evidence: **63/63** smoke checks; k6 benchmark & security stress tests.
+- Next steps: real-time notifications · 2FA · object storage for avatars.
 
 ---
 
-## 3) Report mẫu để dán (copy sẵn clipboard)
+## 3. Sample report (clipboard)
 
 ```
 ## Summary
@@ -101,28 +168,29 @@ Authorization: Bearer <victim token>
 ```
 ```
 
-> Ý cuối có 1 thẻ `<img onerror>` — khi mở Case sẽ thấy nó **biến thành chữ** (sanitize 2 tầng). Nếu không muốn nhắc sanitize thì xoá dòng đó.
+> The `<img onerror>` tag in the Impact line is intentional: when the case is opened, it appears as plain text — proof of two-layer sanitization. Remove the line if you prefer not to mention sanitization.
 
 ---
 
-## 4) Phương án dự phòng
+## 4. Fallback plan
 
-| Rủi ro | Xử lý |
+| Risk | Action |
 |---|---|
-| Tunnel lag/đổi URL | Vẫn demo **localhost trên máy chiếu**; tunnel chỉ để mọi người xem lại sau |
-| Lỡ tay đóng report sớm | Mở report PENDING khác trên Dashboard (còn nhiều) — mỗi report độc lập |
-| Quên đoạn text | Mở `docs/sample-reports.md` (3 mẫu dán sẵn) |
-| Cần `reporter5` mà đã bị khoá | Dùng `reporter4` (cùng signal 0) |
-| Cả lớp cùng vào bị 429 tầng IP | `docker exec vulncell-demo-redis-1 redis-cli flushdb` (nói: "đây là lớp chặn IP theo cửa sổ 60s") hoặc đã nâng `RATE_LIMIT_API_MAX` từ trước |
-| Admin bấm sai state | Luật chỉ đi tiến → nếu lỡ, dùng report khác |
+| Tunnel lag / URL changed | Demo on localhost on the projector; the tunnel is only for the audience to follow along |
+| Report closed by mistake | Open another PENDING report from the dashboard — reports are independent |
+| Forgot the sample text | Use `docs/sample-reports.md` (three paste-ready samples) |
+| `reporter5` already locked | Use `reporter4` (same Signal 0) |
+| Whole class hits the IP limit (shared tunnel bucket) | `docker exec vulncell-demo-redis-1 redis-cli flushdb` — or raise `RATE_LIMIT_API_MAX` beforehand |
+| Admin changes the wrong state | States are forward-only; switch to a different report |
 
 ---
 
-## 5) Câu hỏi dễ bị hỏi trong lúc demo (trả lời 1 dòng)
+## 5. Q&A cheat sheet
 
-- **Vì sao Signal tách khỏi Reputation?** → Phạt "gần đây" không bị điểm cũ rửa sạch; ví dụ seed: `reporter8` reputation +4 nhưng signal −5 → vẫn bị khoá.
-- **Vì sao cookie httpOnly?** → JS không đọc được token → chống XSS đánh cắp phiên.
-- **Vì sao cần transaction?** → Report + Event + Ledger + `User.reputation` cùng thay đổi hoặc cùng huỷ.
-- **Vì sao không cho PENDING → RESOLVED?** → Bảng chuyển chỉ-đi-tiến; phải qua TRIAGED.
-- **Vì sao không sập khi Redis chết?** → Cache miss đọc thẳng Postgres, rate limit fail-open.
-- **Index có thật không?** → Có: composite + GIN pg_trgm đã khôi phục và khai báo trong `schema.prisma` (Chặng 2).
+- **Why are Signal and Reputation separate?** → Recent penalties must not be washed out by old points; e.g. `reporter8` has +4 reputation but −5 Signal and is still blocked.
+- **Why httpOnly cookies?** → JavaScript cannot read the token, so XSS cannot steal the session.
+- **Why transactions?** → Report + timeline + ledger + reputation column change together, or not at all.
+- **Why is PENDING → RESOLVED rejected?** → The transition table is forward-only; a report must be TRIAGED first.
+- **What happens if Redis dies?** → Cache misses fall back to PostgreSQL and rate limiting fails open; the API stays available.
+- **Are the performance indexes real?** → Yes: composite and GIN trigram indexes are declared in `schema.prisma` and verified in the database.
+- **Can two accounts run in one browser?** → No — cookies are shared across tabs; use two browsers or an incognito window (as in this demo).

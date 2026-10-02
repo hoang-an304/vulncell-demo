@@ -118,6 +118,23 @@ Bản demo đủ để cho bạn bè/nhóm khác xem. Nếu public rộng rãi:
 
 ---
 
+## 7b. Chia sẻ demo qua Internet bằng Cloudflare Tunnel (tuỳ chọn)
+
+Không cần mở firewall/router, chạy được cả sau CGNAT — cloudflared chủ động mở kết nối ra ngoài:
+
+```bash
+# 1) Tải 1 file portable (Windows: cloudflared-windows-amd64.exe; Linux: cloudflared-linux-amd64)
+#    Xem https://github.com/cloudflare/cloudflared/releases
+# 2) Chạy tunnel trỏ vào cổng demo 8080
+./cloudflared tunnel --url http://localhost:8080 --no-autoupdate
+# 3) Cloudflare in ra link dạng https://<random>.trycloudflare.com — gửi link này cho mọi người
+```
+
+Lưu ý:
+- Link **tạm** (đổi mỗi lần chạy), sống trong lúc tiến trình cloudflared chạy; tắt bằng `Ctrl+C` hoặc `Stop-Process -Name cloudflared` (Windows).
+- Qua tunnel, mọi người dùng **chung một "rổ" IP** ở lớp rate limit 1 → nếu cả lớp cùng truy cập, nên nâng `RATE_LIMIT_API_MAX` trong `docker-compose.demo.yml` (ví dụ `"2000"`) rồi `up -d`.
+- Muốn link **cố định** (`demo.tenmien.com`) cần tài khoản Cloudflare + tên miền → dùng "named tunnel".
+
 ## 8. Xử lý lỗi thường gặp
 
 | Lỗi | Nguyên nhân | Cách xử lý |
