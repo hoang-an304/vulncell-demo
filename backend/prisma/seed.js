@@ -1,22 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// CHẶNG 7 (phần 2) — SEED: "ĐẶC TẢ DỮ LIỆU" (prisma/seed.js)
-//
-// Sinh môi trường demo "đẹp" một cách TẤT ĐỊNH — chạy lại luôn ra CÙNG bộ dữ liệu
-// (PRNG cố định mulberry32, seed 20261001) nên test/benchmark tái lập được.
-//
-//   • 11 tài khoản: admin + reporter1..reporter10 (mật khẩu chung: password123)
-//   • ~100 report trải ~600 ngày, đủ mọi state/severity/bounty, timeline đầy đủ
-//   • Ngày tham gia ghim cố định: admin 720 ngày trước; reporter i: 620 + i*9 ngày
-//   • reporter10 có signal ÂM (bị khoá nộp), reporter9 signal 0 (1 lượt/ngày) — Chặng 4
-//   • Mọi report có code block PoC trong details (để demo CodeBlock — Chặng 6)
-//   • SPAM có severity = NONE (spam đi thẳng PENDING -> SPAM, không qua triage)
-//   • Reputation ghi vào ledger + cột User.reputation (đồng bộ); Signal theo cửa sổ 365 ngày
-//
-// Lệnh:
+// Seed môi trường demo/test "đẹp" cho VulnCell.
 //   npm run seed        -> tạo nếu DB trống (bỏ qua nếu đã có report)
-//   npm run seed:reset  -> xoá report/ledger/event + tài khoản lạ ngoài demo rồi tạo lại
-//                          (GIỮ avatar đã upload của 11 tài khoản demo)
-// ═══════════════════════════════════════════════════════════════════════════════
+//   npm run seed:reset  -> reset sạch (report/ledger/event + tài khoản lạ ngoài demo) rồi tạo lại từ đầu
+//
+// Kết quả: admin + reporter1..reporter10 (mật khẩu chung: password123)
+//   ~99 report trải ~600 ngày, đủ mọi state/severity, có bounty, timeline đầy đủ,
+//   SPAM/không hợp lệ xen kẽ để test cả privacy lẫn rate limit.
+//   Reputation ghi vào ledger + cột User.reputation (đồng bộ); Signal tính theo cửa sổ 365 ngày.
+// Dữ liệu sinh từ PRNG cố định -> chạy lại luôn ra cùng bộ dữ liệu (tái lập được).
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const { isDisclosed, pointsForState } = require('../src/services/stateMachine');

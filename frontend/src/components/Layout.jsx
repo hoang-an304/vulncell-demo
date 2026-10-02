@@ -38,31 +38,18 @@ function MobileLink({ to, end, onClick, children, muted = false }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CHẶNG 6 (phần 8) — KHUNG CHUNG CỦA MỌI TRANG (components/Layout.jsx)
-//
-// Layout KHÔNG phải một trang — nó là "cái khung" bọc ngoài mọi trang con:
-//   • header (logo + tài khoản)  — luôn hiện
-//   • rail icon bên trái         — luôn hiện (desktop)
-//   • menu mobile                — mở khi bấm nút ☰
-//   • <Outlet />                 — ⭐ "lỗ khoét" để TRANG CON hiện vào
-//
-// Nhờ nested route (xem App.jsx), khi đổi trang chỉ phần <Outlet /> thay;
-// header/rail đứng yên, không reload cả trang.
-// ═══════════════════════════════════════════════════════════════════════════════
 export default function Layout() {
-  const { user, logout } = useAuth(); // ai đang đăng nhập? (lấy từ AuthContext)
-  const navigate = useNavigate(); // đổi trang BẰNG CODE (ví dụ sau khi logout)
-  const location = useLocation(); // URL hiện tại (dùng cho animation chuyển trang)
-  const [menuOpen, setMenuOpen] = useState(false); // menu mobile đang mở?
-  const [loggingOut, setLoggingOut] = useState(false); // đang gọi API logout?
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Signal âm -> tạm khóa nộp report: làm mờ nút Submit (navbar/rail/mobile menu)
   const submitBlocked = Boolean(user && user.role !== 'ADMIN' && (user.signal ?? 0) < 0);
 
   const closeMenu = () => setMenuOpen(false);
 
-  // Đăng xuất: gọi API (xoá cookie) -> AuthContext dọn cache -> điều hướng về trang chủ
   const handleLogout = async () => {
     setMenuOpen(false);
     setLoggingOut(true);
@@ -218,8 +205,7 @@ export default function Layout() {
         </div>
       ) : null}
 
-      {/* Rail icon dính sát trái, chạy từ chân top bar xuống đáy màn hình.
-          NavLink = Link có "đèn báo" isActive -> tô vàng mục đang mở. */}
+      {/* Rail icon dính sát trái, chạy từ chân top bar xuống đáy màn hình */}
       <aside className="fixed bottom-0 left-0 top-14 z-10 hidden w-14 flex-col items-center gap-1.5 border-r border-zinc-800/70 bg-zinc-950 pt-3 md:flex">
         <NavLink to="/" end className={railItem} title="Dashboard" aria-label="Dashboard">
           <LineChart className="h-5 w-5" />
@@ -247,11 +233,8 @@ export default function Layout() {
       {/* Nội dung: chừa chỗ cho rail, căn giữa bề ngang đọc */}
       <div className="px-4 py-6 md:pl-20">
         <main className="mx-auto w-full max-w-5xl">
-          {/* key theo pathname -> mỗi lần chuyển màn React "làm mới" div này
-              và chạy animation fade nhẹ (page-enter định nghĩa trong index.css) */}
+          {/* key theo pathname -> mỗi lần chuyển màn có animation fade nhẹ */}
           <div key={location.pathname} className="page-enter">
-            {/* ⭐ Outlet = nơi TRANG CON (Dashboard/Case/…) được render vào khung.
-                Đổi URL -> chỉ phần này thay; header/rail phía trên giữ nguyên. */}
             <Outlet />
           </div>
         </main>

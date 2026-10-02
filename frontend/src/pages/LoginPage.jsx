@@ -22,9 +22,6 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await login(identifier.trim(), password);
-      // RequireAuth đã gửi kèm "vị trí muốn vào" (state.from) khi đá về /login.
-      // Đăng nhập xong -> quay lại đúng trang đó; không có thì về trang chủ.
-      // replace: true = thay lịch sử -> bấm Back KHÔNG quay lại trang login.
       navigate(location.state?.from?.pathname || '/', { replace: true });
     } catch (err) {
       if (err.status === 401) setError('Wrong email/username or password.');
