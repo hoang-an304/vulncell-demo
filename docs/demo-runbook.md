@@ -63,7 +63,7 @@ docker exec vulncell-demo-redis-1 redis-cli flushdb
 ### Slide S3 — Security — 35 s
 > "Security has five pillars. Passwords are **bcrypt-hashed**. Sessions are **JWTs stored in httpOnly cookies** — not in localStorage, so XSS cannot steal them. All input is validated with **zod**. All content is sanitized in **two layers**: the server strips every HTML tag before storing, and the client renders Markdown with a sanitizer on top. And there are **three rate-limit layers**: a global per-IP limit, a login limiter that locks after five failed attempts, and a submission quota based on Signal. Behind nginx we also enable `trust proxy`, so the limiter sees the real client IP."
 
-### Slide S4 — Performance & benchmarking — 35 s
+### Slide S4 — Performance, benchmarking & stress testing — 35 s
 > "On performance: we denormalized the reputation column, added composite and GIN trigram indexes, introduced Redis caching with a version key, gzip and keyset pagination.
 > We benchmarked with **k6 on 500,000 reports**. The leaderboard went from **1,263 ms to 47.8 ms p95 without cache — about 26 times faster — and 3.0 ms with cache**. For security, we ran stress tests: brute-force login is blocked after five attempts, and the spam test served **51,698 requests at 2,585 requests per second**, with exactly 300 requests passing the per-IP cap — everything else was rejected without touching the database."
 
@@ -101,7 +101,7 @@ docker exec vulncell-demo-redis-1 redis-cli flushdb
 - **Rate limiting in 3 layers** (IP / login / Signal) + `trust proxy` for real client IPs.
 - Privacy: SPAM reports are visible only to their owner and admins.
 
-### Slide 5 — Performance & benchmarking
+### Slide 5 — Performance, Benchmarking & Stress Testing
 - Optimizations (v2): denormalized reputation + composite & **GIN trigram** indexes; Redis cache with version key; gzip; keyset pagination.
 - What v0 / v1 / v2 mean:
 
@@ -119,8 +119,15 @@ docker exec vulncell-demo-redis-1 redis-cli flushdb
 | Leaderboard | **1,263.1** | **3.0** | **47.8** | **3.0** |
 | Case detail | 5.9 | 6.2 | 6.6 | 5.6 |
 
-- Security stress tests: brute-force → 1,205 × 429 after 5 tries; spam → 51,698 requests @ 2,585 RPS, exactly 300 passed.
-- Full data: `docs/benchmark-report.md` (§1.3 explains the v0/v1/v2 setup).
+- Security **stress tests** (k6, rate limits ON):
+
+| Test | Setup | Result |
+|---|---|---|
+| Brute-force login | 5 VUs × 25s, wrong password | 5 × 401 (allowed) → **1,205 × 429** (locked after 5 tries) |
+| API spam | 8 VUs × 20s | **300 × 200** (cap hit) → **51,398 × 429** · **2,585 RPS** · p95 4.6 ms |
+
+> `fail%` of these tests (100% / 99.42%) is **by design** — those are blocked requests (429), not server errors. The point: the API **keeps serving at 2,585 RPS while rejecting** — the protection does not make the system fall over.
+- Full data: `docs/benchmark-report.md` (§1.3 = v0/v1/v2 setup, §4 = security stress tests).
 
 ### Slide 6 — Summary & roadmap
 - **5 main features** + advanced engineering (rate limiting, caching, DB optimization, benchmarking, stress testing).
