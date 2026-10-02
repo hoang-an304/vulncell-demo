@@ -28,7 +28,7 @@ k6 run --summary-export=bench/results/v0-search.json bench/k6/dashboard-search.j
 
 | Loại | Câu hỏi nó trả lời | Trong project này |
 |---|---|---|
-| **Benchmark** (đo hiệu năng) | "Nhanh cỡ nào?" — đo p95/p99, throughput ở tải bình thường | So sánh **trước/sau tối ưu** (các mốc v0 → v1 → v2) |
+| **Benchmark** (đo hiệu năng) | "Nhanh cỡ nào?" — đo p90/p95, throughput ở tải bình thường | So sánh **trước/sau tối ưu** (các mốc v0 → v1 → v2) |
 | **Load test** | "Chịu được tải dự kiến không?" | Ramp-up lên 30–50 user ảo (các stages trong script) |
 | **Stress test** | "Gãy ở đâu? Bao giờ mới sập?" | Bơm 500k dữ liệu + đẩy tải tăng dần tới khi lỗi |
 | **Abuse/Security test** | "Cơ chế chặn spam có hoạt động?" | Brute-force login + spam API (kịch bản 4, 5) |
@@ -50,7 +50,7 @@ Tăng VU = tăng số người dùng đồng thời. Ramp-up = tăng từ từ �
 | `http_req_failed` | Tỷ lệ request bị coi là lỗi (4xx/5xx) | Kịch bản perf phải ~0%; kịch bản security cố ý cao |
 | `vus` | Số user ảo đang chạy | Đối chiếu với stages trong script |
 
-> **Vì sao nhìn p95/p99 mà không nhìn avg?** Ví dụ 100 request: 95 request mất 20ms, 5 request mất 3 giây (cache miss + query nặng). Avg = ~170ms nghe "ổn", nhưng p95 = 20ms còn p99 = 3s — con số p99 mới nói lên trải nghiệm tệ nhất mà người dùng gặp.
+> **Vì sao nhìn p95/p90 mà không nhìn avg?** Ví dụ 100 request: 95 request mất 20ms, 5 request mất 3 giây (cache miss + query nặng). Avg ≈ 170ms nghe "ổn", nhưng p95 = 20ms — avg bị outlier kéo lệch, còn p95/p90 mới mô tả trải nghiệm thật của phần lớn người dùng.
 
 ---
 
@@ -160,18 +160,16 @@ Mỗi kịch bản dài ~1 phút. **Chạy 3 lần, bỏ lần 1 (warm-up), lấ
 ### Bước 4 — Đọc kết quả & ghi lại
 Nhìn 4 dòng này trong output:
 ```
-http_req_duration....: ... p(95)=... p(99 không in mặc định nếu dùng --summary-trend-stats)
+http_req_duration....: ... p(95)=...
 http_reqs............: ... <rate>/s
 http_req_failed......: ...%
 ```
-Muốn in thêm p99: thêm flag:
-```powershell
-k6 run --summary-trend-stats="avg,min,med,p(90),p(95),p(99),max" ...
-```
-Ghi vào bảng tổng hợp (Mục 9) cặp số: **p95 · p99 · RPS · error%**.
+Ghi vào bảng tổng hợp (Mục 9) bộ số: **p95 · p90 · RPS · error%**.
 
 ### Bước 5 — So sánh sau khi tối ưu
-Sau khi tôi áp xong toàn bộ tối ưu (phiên bản **v1**): **restart server, chạy lại đúng các lệnh ở Bước 3** với tên file `v1-...` (cả 2 chế độ nocache + cache). So sánh bằng `npm run bench:results` hoặc mở JSON bằng Excel.
+Sau khi áp xong toàn bộ tối ưu (phiên bản **v2**): **restart server, chạy lại đúng các lệnh ở Bước 3** với tên file `v2-...`, lặp ở **cả 2 chế độ** (`serve:bench:nocache` → file `-nocache`, `serve:bench` → file `-cache`). So sánh bằng `npm run bench:results` hoặc mở JSON bằng Excel.
+
+> Tóm tắt khác biệt **v0 / v1 / v2** (setup từng mốc, v2 thêm những gì): xem `docs/benchmark-report.md` §1.3.
 
 ### Bước 6 — Kịch bản security (làm cuối cùng, server chế độ THƯỜNG)
 ```powershell
@@ -236,7 +234,6 @@ npm run seed:bench:clean       # xóa user/report/ledger bench — về lại d�
 
 → Vẽ biểu đồ cột p95: leaderboard v0 vs v2 (chênh 26×) là hình ăn điểm nhất.
 → Kèm ảnh chụp 2 counter: `login_429_DA_BI_CHAN` và `api_429_DA_BI_CHAN`.
-→ p99: bảng hiện chỉ có p95; muốn p99 chạy lại kèm `--summary-trend-stats="avg,min,med,p(90),p(95),p(99),max"` (không bắt buộc cho slide).
 
 ---
 
