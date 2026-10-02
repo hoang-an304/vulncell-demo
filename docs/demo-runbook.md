@@ -90,9 +90,10 @@ docker exec vulncell-demo-redis-1 redis-cli flushdb
 
 ### Slide 3 — Architecture & data flow
 - **3 layers**: React SPA → Express API → PostgreSQL + Redis.
-- **Request pipeline**: proxy → CORS → compression → JSON/cookie parsing → rate limit → route → auth/validation → handler → DB/cache.
-- **Data model (4 tables)**: `User`, `Report`, `ReportEvent` (timeline), `ReputationLedger` (points).
-- **State machine**: 8 forward-only states, admin-only transitions, every action = 1 transaction.
+- **Read path (one request)**: browser `fetch('/api/…')` with the session cookie → nginx/Vite proxy → middleware chain (CORS → gzip → JSON body → cookie parser → rate limit) → route → `authenticate` (verify JWT + load user) / `validate` (zod) → handler → **PostgreSQL** (or a **Redis** cache hit) → JSON response → React Query cache → UI.
+- **Write path (submit a report / triage an action)**: the handler runs **one transaction** → `Report` + `ReportEvent` (timeline) + `ReputationLedger` (+ denormalized `User.reputation`) commit together → then **cache invalidation**: `reports:version` is bumped and leaderboard/stats keys are deleted.
+- **Data model (4 tables)**: `User` ─N→ `Report` ─N→ `ReportEvent`; `User` ─N→ `ReputationLedger` (points ledger).
+- **State machine**: 8 forward-only states (`PENDING → TRIAGED → RESOLVED/…`), admin-only transitions, every action = 1 transaction.
 
 ### Slide 4 — Security
 - bcrypt password hashing; **JWT in httpOnly cookie**; zod input validation.
@@ -101,18 +102,25 @@ docker exec vulncell-demo-redis-1 redis-cli flushdb
 - Privacy: SPAM reports are visible only to their owner and admins.
 
 ### Slide 5 — Performance & benchmarking
-- Optimizations: denormalized reputation + composite & **GIN trigram** indexes; Redis cache with version key; gzip; keyset pagination.
-- Benchmark matrix (k6, 500,000 reports; cells = **p95 / p99**, ms):
+- Optimizations (v2): denormalized reputation + composite & **GIN trigram** indexes; Redis cache with version key; gzip; keyset pagination.
+- What v0 / v1 / v2 mean:
+
+| | v0 | v1 | v2 |
+|---|---|---|---|
+| Code | baseline | baseline | baseline + all optimizations |
+| Cache | off | on | toggle — both measured |
+| Measures | raw DB cost | cache effect | data-layer + cache effect |
+
+- Results — **p95 (ms)**:
 
 | Scenario | v0 — nocache | v1 — cache | v2 — nocache | v2 — cache |
 |---|---|---|---|---|
-| Search | 9.2 / — | 4.3 / — | 9.8 / — | 7.9 / — |
-| Leaderboard | **1,263.1 / —** | **3.0 / —** | **47.8 / —** | **3.0 / —** |
-| Case detail | 5.9 / — | 6.2 / — | 6.6 / — | 5.6 / — |
+| Search | 9.2 | 4.3 | 9.8 | 7.9 |
+| Leaderboard | **1,263.1** | **3.0** | **47.8** | **3.0** |
+| Case detail | 5.9 | 6.2 | 6.6 | 5.6 |
 
-> `v0` = pre-cache baseline (measured with cache disabled); `v1` = cache milestone; `v2` = optimized build where cache is a toggle — measured **both** ways. **p99 = `—`** because the recorded runs only captured k6's default stats (avg/min/med/max/p90/p95).
 - Security stress tests: brute-force → 1,205 × 429 after 5 tries; spam → 51,698 requests @ 2,585 RPS, exactly 300 passed.
-- Full data: `docs/benchmark-report.md`.
+- Full data: `docs/benchmark-report.md` (§1.3 explains the v0/v1/v2 setup).
 
 ### Slide 6 — Summary & roadmap
 - **5 main features** + advanced engineering (rate limiting, caching, DB optimization, benchmarking, stress testing).
@@ -169,4 +177,3 @@ Authorization: Bearer <victim token>
 - **What happens if Redis dies?** → Cache misses fall back to PostgreSQL and rate limiting fails open; the API stays available.
 - **Are the performance indexes real?** → Yes: composite and GIN trigram indexes are declared in `schema.prisma` and verified in the database.
 - **Can two accounts run in one browser?** → No — cookies are shared across tabs; use two browsers or an incognito window (as in this demo).
-- **Why is there no p99 in the benchmark table?** → The recorded k6 runs used the default trend stats (p90/p95); p99 can be collected by re-running with `--summary-trend-stats="avg,min,med,p(90),p(95),p(99),max"`.
