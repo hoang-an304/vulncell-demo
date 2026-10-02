@@ -1,11 +1,21 @@
-// Bộ parse / compose cú pháp tìm kiếm kiểu HackerOne cho VulnCell.
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHẶNG 6 (phần 7) — CÚ PHÁP TÌM KIẾM KIỂU HACKERONE (lib/queryParser.js)
 //
-// Ví dụ người dùng gõ (hoặc bấm panel filter sinh ra):
-//   (severity:HIGH AND disclosed:true AND weakness:("Reflected XSS") AND bounty:>=213 AND bounty:<=1133) xss login
+// Nhiệm vụ: chuyển qua lại giữa 3 dạng biểu diễn của bộ lọc:
+//   1. CHUỖI người dùng gõ  — vd: (severity:HIGH AND weakness:("Reflected XSS")) login
+//   2. OBJECT filters        — vd: { severity: 'HIGH', weakness: 'Reflected XSS', q: 'login' }
+//   3. QUERY PARAMS gửi API  — vd: ?severity=HIGH&weakness=Reflected+XSS&q=login
+//
+// Các hàm chính:
+//   parseQuery(chuỗi)      -> object filters   (dùng khi người dùng bấm Search)
+//   composeQueryText(obj)  -> chuỗi hiển thị   (dùng khi bấm panel filter -> đổ vào ô search)
+//   toApiParams(obj)       -> query params     (dùng khi gọi API)
 //
 // Alias chấp nhận khi parse (lấy cảm hứng từ cú pháp HackerOne):
-//   cwe / weakness            -> weakness
-//   total_awarded_amount / bounty -> bounty (>, >=, <, <= hoặc =)
+//   cwe / weakness                 -> weakness
+//   total_awarded_amount / bounty  -> bounty (>, >=, <, <= hoặc =)
+// Key lạ hoặc giá trị không hợp lệ sẽ được coi là TỪ KHOÁ TÌM KIẾM THƯỜNG (filters.q).
+// ═══════════════════════════════════════════════════════════════════════════════
 import { ALL_STATES, SEVERITIES, isDisclosed } from './stateMachine';
 
 export { SEVERITIES };
@@ -94,6 +104,9 @@ export function emptyFilters() {
   };
 }
 
+// HÀM CHÍNH: chuỗi người dùng gõ -> object filters.
+// Tách token (tokenize) rồi phân loại: key hợp lệ -> gán vào filters;
+// key lạ / giá trị sai -> gom vào `free` để thành từ khoá tìm kiếm (filters.q).
 export function parseQuery(input) {
   const filters = emptyFilters();
   const free = [];
@@ -145,6 +158,8 @@ export function parseQuery(input) {
   return filters;
 }
 
+// Ngược lại: object filters -> CHUỖI hiển thị trong ô tìm kiếm
+// (dùng khi người dùng bấm chọn trong panel filter, ví dụ "state:RESOLVED").
 export function composeQueryText(filters) {
   const parts = [];
 
