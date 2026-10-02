@@ -38,26 +38,41 @@
 
 ---
 
-## 2. Bảng kết quả tổng hợp (14 file trong `bench/results/`)
+## 2. Bảng kết quả tổng hợp (xếp lại từ 14 file trong `bench/results/`)
 
-| File | avg (ms) | p90 (ms) | p95 (ms) | med (ms) | max (ms) | requests | RPS | fail% |
-|---|---|---|---|---|---|---|---|---|
-| v0-leaderboard | 673.9 | 1156.2 | **1263.1** | 678.2 | 1533.5 | 1.498 | 24.8 | 0 |
-| v0-search | 6.8 | 8.7 | 9.2 | 6.8 | 29.9 | 3.221 | 53.4 | 0 |
-| v0-case | 4.1 | 5.2 | 5.9 | 4.2 | 24.4 | 5.595 | 92.9 | 0 |
-| v1-leaderboard | 2.4 | 2.8 | 3.0 | 2.3 | 351.7 | 3.474 | 57.6 | 0 |
-| v1-search | 3.5 | 4.0 | 4.3 | 3.3 | 27.7 | 3.255 | 54.0 | 0 |
-| v1-case | 4.3 | 5.5 | 6.2 | 4.3 | 56.4 | 5.589 | 93.0 | 0 |
-| **v2-leaderboard-nocache** | 19.4 | 43.3 | **47.8** | 12.8 | 88.9 | 3.363 | 55.8 | 0 |
-| v2-leaderboard-cache | 2.3 | 2.8 | 3.0 | 2.3 | 41.2 | 3.474 | 57.5 | 0 |
-| v2-search-nocache | 7.4 | 9.3 | 9.8 | 7.4 | 32.2 | 3.215 | 53.5 | 0 |
-| v2-search-cache | 3.8 | 4.4 | 7.9 | 3.4 | 33.9 | 3.252 | 54.2 | 0 |
-| v2-case-nocache | 4.5 | 5.8 | 6.6 | 4.4 | 17.1 | 5.585 | 92.9 | 0 |
-| v2-case-cache | 4.0 | 5.1 | 5.6 | 4.1 | 58.3 | 5.601 | 92.8 | 0 |
-| security-bruteforce | 3.0 | 4.1 | 4.5 | 2.5 | 82.9 | 1.210 | 48.2 | 100* |
-| security-spam | 3.0 | 4.0 | 4.6 | 2.9 | 46.7 | 51.698 | 2.584,7 | 99.42* |
+### 2.1 Ma trận so sánh — p95 / p99 (ms)
+
+| Kịch bản | v0 — nocache (DB thuần) | v1 — cache | v2 — nocache | v2 — cache |
+|---|---|---|---|---|
+| **Search** | 9.2 / — | 4.3 / — | 9.8 / — | 7.9 / — |
+| **Leaderboard** | **1263.1 / —** | **3.0 / —** | **47.8 / —** | **3.0 / —** |
+| **Case detail** | 5.9 / — | 6.2 / — | 6.6 / — | 5.6 / — |
+| **Security** | brute-force: 4.5 / — · spam: 4.6 / — *(không áp dụng cache)* | | | |
+
+> **Vì sao mỗi mốc chỉ có một chế độ:** `v0` = baseline *trước khi có cache* → chỉ đo được DB thuần (nocache); `v1` = mốc "thêm cache" → đo cache; `v2` = code đã tối ưu, cache là công tắc (`CACHE_DISABLED`) → đo **cả hai**. Bốn cột trên là ma trận đầy đủ có thể tái lập từ code hiện tại.
+> **Vì sao p99 = `—`:** các lần đo dùng bộ thống kê mặc định của k6 (`avg, min, med, max, p90, p95`) — **p99 chưa từng được ghi vào file**. Muốn có p99 phải chạy lại kèm `--summary-trend-stats="avg,min,med,p(90),p(95),p(99),max"` (1 flag).
+
+### 2.2 Chi tiết từng file
+
+| File (chế độ) | avg (ms) | p90 (ms) | p95 (ms) | p99 (ms) | med (ms) | max (ms) | requests | RPS | fail% |
+|---|---|---|---|---|---|---|---|---|---|
+| v0-leaderboard (nocache) | 673.9 | 1156.2 | **1263.1** | — | 678.2 | 1533.5 | 1.498 | 24.8 | 0 |
+| v0-search (nocache) | 6.8 | 8.7 | 9.2 | — | 6.8 | 29.9 | 3.221 | 53.4 | 0 |
+| v0-case (nocache) | 4.1 | 5.2 | 5.9 | — | 4.2 | 24.4 | 5.595 | 92.9 | 0 |
+| v1-leaderboard (cache) | 2.4 | 2.8 | 3.0 | — | 2.3 | 351.7 | 3.474 | 57.6 | 0 |
+| v1-search (cache) | 3.5 | 4.0 | 4.3 | — | 3.3 | 27.7 | 3.255 | 54.0 | 0 |
+| v1-case (cache) | 4.3 | 5.5 | 6.2 | — | 4.3 | 56.4 | 5.589 | 93.0 | 0 |
+| **v2-leaderboard-nocache** | 19.4 | 43.3 | **47.8** | — | 12.8 | 88.9 | 3.363 | 55.8 | 0 |
+| v2-leaderboard-cache | 2.3 | 2.8 | 3.0 | — | 2.3 | 41.2 | 3.474 | 57.5 | 0 |
+| v2-search-nocache | 7.4 | 9.3 | 9.8 | — | 7.4 | 32.2 | 3.215 | 53.5 | 0 |
+| v2-search-cache | 3.8 | 4.4 | 7.9 | — | 3.4 | 33.9 | 3.252 | 54.2 | 0 |
+| v2-case-nocache | 4.5 | 5.8 | 6.6 | — | 4.4 | 17.1 | 5.585 | 92.9 | 0 |
+| v2-case-cache | 4.0 | 5.1 | 5.6 | — | 4.1 | 58.3 | 5.601 | 92.8 | 0 |
+| security-bruteforce | 3.0 | 4.1 | 4.5 | — | 2.5 | 82.9 | 1.210 | 48.2 | 100* |
+| security-spam | 3.0 | 4.0 | 4.6 | — | 2.9 | 46.7 | 51.698 | 2.584,7 | 99.42* |
 
 `*` fail% cao là **chủ đích**: k6 tính 401/429 là "failed", đó chính là các request bị chặn.
+`—` = không có trong file kết quả (xem ghi chú §2.1).
 
 ---
 
@@ -172,7 +187,7 @@
 
 ---
 
-## 8. Raw summary (re-generated 2026-10-03, `npm run bench:results`)
+## 8. Raw summary — đọc trực tiếp từ file (`npm run bench:results`, không chạy lại)
 
 | File | p95 (ms) | med (ms) | max (ms) | requests | RPS | error % |
 |---|---|---|---|---|---|---|
@@ -193,6 +208,7 @@
 
 `*` Security scenarios count blocked requests (401/429) as "failed" by design — a high error rate means the protection is working.
 > Numbers match Section 2 (same raw files); the `error %` column is the raw k6 `http_req_failed` metric.
+> **p99 is not available in any file** — the recorded runs used k6's default trend stats (`avg/min/med/max/p90/p95`); see the note in §2.1.
 
 ## Phụ lục A — Lệnh tái lập toàn bộ số đo
 

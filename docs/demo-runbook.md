@@ -2,14 +2,14 @@
 
 > Presentation language: **English**. This document contains the **speaking script** and the **slide deck content**.
 > Order: **all slides first, then the live demo** — the audience understands the design before seeing it run.
-> Total ≈ 6 minutes at a normal speaking pace (no fixed timeline; follow the order).
+> The live demo is prepared and run separately by the presenter (see Section 3 for the sample report).
 
 ## Evaluation criteria coverage
 
 | Requirement | Covered by |
 |---|---|
-| **Standard**: complete interface + 2–3 key features | Slides S1/S5 + live demo steps 1–4 (auth, submit, triage) |
-| **Advanced**: 4–5 main features + advanced functionality (e.g., optimize performance, benchmarking, stress testing) | Slides S2–S4 + demo + the benchmark and stress-test numbers below |
+| **Standard**: complete interface + 2–3 key features | Slides S1/S5 + live demo (self-run: authentication, submission, triage) |
+| **Advanced**: 4–5 main features + advanced functionality (e.g., optimize performance, benchmarking, stress testing) | Slides S2–S4 + the benchmark matrix and stress-test numbers below |
 
 **5 main features**
 1. Authentication & role-based access (hacker / admin)
@@ -70,32 +70,6 @@ docker exec vulncell-demo-redis-1 redis-cli flushdb
 ### Slide S5 — Summary & roadmap — 20 s
 > "To summarize: five main features — authentication, submission, triage, reputation and discovery — plus advanced engineering: three-layer rate limiting, caching, database optimization, and formal benchmarking and stress testing. Possible next steps are real-time notifications, two-factor authentication and object storage for avatars. Now let me show it running."
 
-### Live demo — ~3 minutes
-
-**Step 1 — Login lock (reporter5).**
-> Action: type `reporter5` with a wrong password, click **Log in** five times (the field keeps its value — just click again).
-> "This is the login rate limiter: five failed attempts per minute, per IP and username. The sixth attempt is blocked for fifteen minutes — the counter lives in Redis with a TTL, so it expires automatically."
-
-**Step 2 — Blocked submit (reporter10).**
-> Action: log in as `reporter10`; show the dimmed Submit button; open `/submit` (red banner); click Submit to trigger the 429.
-> "This account has a negative **Signal**, so submissions are disabled. Signal is the sum of reputation points over the last 365 days — deliberately separate from lifetime reputation, so old good scores cannot wash out recent spam."
-
-**Step 3 — Submit a report (reporter1).**
-> Action: log in as `reporter1`; open the profile to show **Signal 51**; open Submit; paste the sample report; create it.
-> "Signal is positive, so the daily quota allows this report. The server validates the payload with zod and strips HTML — note the malicious image tag in the report. The report is created in **PENDING**."
-
-**Step 4 — Admin triage (incognito window).**
-> Action: as `admin`, open the newest report; add a comment; set state **TRIAGED** with severity **HIGH**; then **RESOLVED** with a **$500** bounty.
-> "Severity can only be set from TRIAGED, and the bounty only when the report is RESOLVED. Each action is a single transaction: the report, the timeline event, the ledger entry and the denormalized reputation column update together — or not at all."
-
-**Step 5 — Back to reporter1.**
-> Action: reload the profile — Signal **51 → 58**; open the case — full timeline.
-> "Resolving the report added +7 points to the ledger, and Signal moved from 51 to 58. The timeline shows the full lifecycle: submitted, triaged, resolved, bounty. And the malicious tag is now harmless text — that is the two-layer sanitization."
-
-**Step 6 — (optional, if time allows) Leaderboard.**
-> Action: open `/leaderboard`.
-> "The leaderboard reads the denormalized column, so it stays fast even with half a million reports."
-
 ### Closing — 15 s
 > "VulnCell implements a complete, end-to-end bounty workflow — secure by design and validated by tests: **63 of 63 smoke checks pass**, and the k6 benchmark and stress tests quantify the improvements. Thank you — I am happy to take questions."
 
@@ -128,14 +102,15 @@ docker exec vulncell-demo-redis-1 redis-cli flushdb
 
 ### Slide 5 — Performance & benchmarking
 - Optimizations: denormalized reputation + composite & **GIN trigram** indexes; Redis cache with version key; gzip; keyset pagination.
-- Benchmark (k6, 500,000 reports):
+- Benchmark matrix (k6, 500,000 reports; cells = **p95 / p99**, ms):
 
-| Metric | v0 | v2 (no cache) | v2 (cache) |
-|---|---|---|---|
-| Leaderboard p95 | **1,263 ms** | **47.8 ms (~26×)** | **3.0 ms** |
-| Search / Case p95 | 9.2 / 5.9 ms | 9.8 / 6.6 ms | 7.9 / 5.6 ms |
-| Cold-miss max (leaderboard) | 1,533 ms | 88.9 ms | **41.2 ms** |
+| Scenario | v0 — nocache | v1 — cache | v2 — nocache | v2 — cache |
+|---|---|---|---|---|
+| Search | 9.2 / — | 4.3 / — | 9.8 / — | 7.9 / — |
+| Leaderboard | **1,263.1 / —** | **3.0 / —** | **47.8 / —** | **3.0 / —** |
+| Case detail | 5.9 / — | 6.2 / — | 6.6 / — | 5.6 / — |
 
+> `v0` = pre-cache baseline (measured with cache disabled); `v1` = cache milestone; `v2` = optimized build where cache is a toggle — measured **both** ways. **p99 = `—`** because the recorded runs only captured k6's default stats (avg/min/med/max/p90/p95).
 - Security stress tests: brute-force → 1,205 × 429 after 5 tries; spam → 51,698 requests @ 2,585 RPS, exactly 300 passed.
 - Full data: `docs/benchmark-report.md`.
 
@@ -194,3 +169,4 @@ Authorization: Bearer <victim token>
 - **What happens if Redis dies?** → Cache misses fall back to PostgreSQL and rate limiting fails open; the API stays available.
 - **Are the performance indexes real?** → Yes: composite and GIN trigram indexes are declared in `schema.prisma` and verified in the database.
 - **Can two accounts run in one browser?** → No — cookies are shared across tabs; use two browsers or an incognito window (as in this demo).
+- **Why is there no p99 in the benchmark table?** → The recorded k6 runs used the default trend stats (p90/p95); p99 can be collected by re-running with `--summary-trend-stats="avg,min,med,p(90),p(95),p(99),max"`.

@@ -889,23 +889,21 @@ Backend là nơi **quyết định** (lọc theo người xem; SPAM ẩn với n
 - 3 mức: v0 (gốc) → v1 → v2 (đủ tối ưu); chạy ở 2 chế độ cache/nocache (`serve:bench`, `serve:bench:nocache`).
 - Kết quả lưu `bench/results/*.json` → đọc bằng `npm run bench:results`.
 
-## 5. Bảng kết quả đã ghi (vừa in lại bằng `bench:results`)
-```
-File                          | p95(ms) | med(ms) | max(ms) | requests | RPS   | error%
-v0-leaderboard                |  1263.1 |   678.2 |  1533.5 |     1498 |  24.8 |   0.00
-v1-leaderboard                |     3.0 |     2.3 |   351.7 |     3474 |  57.6 |   0.00
-v2-leaderboard-nocache        |    47.8 |    12.8 |    88.9 |     3363 |  55.8 |   0.00
-v2-leaderboard-cache          |     3.0 |     2.3 |    41.2 |     3474 |  57.5 |   0.00
-v0-search / v2-search-nocache | 9.2 / 9.8 (ổn định)
-v0-case / v2-case-cache       | 5.9 / 5.6 (ổn định)
-security-bruteforce           |     4.5 |     2.5 |    82.9 |     1210 |  48.2 | 100.00
-security-spam                 |     4.6 |     2.9 |    46.7 |    51698 | 2584.7|  99.42
-```
+## 5. Bảng kết quả đã ghi (xếp lại từ `bench/results/`)
+
+| Kịch bản (p95 / p99, ms) | v0 — nocache | v1 — cache | v2 — nocache | v2 — cache |
+|---|---|---|---|---|
+| Search | 9.2 / — | 4.3 / — | 9.8 / — | 7.9 / — |
+| Leaderboard | **1263.1 / —** | **3.0 / —** | **47.8 / —** | **3.0 / —** |
+| Case detail | 5.9 / — | 6.2 / — | 6.6 / — | 5.6 / — |
+| Security | brute-force 4.5 / — · spam 4.6 / — *(không áp dụng cache)* | | | |
+
+> `v0` = baseline trước khi có cache (chỉ nocache); `v1` = mốc thêm cache; `v2` = code tối ưu — cache là công tắc nên đo **cả hai**. **p99 = `—` vì chưa từng được ghi** trong file (k6 mặc định chỉ có `p90/p95`); muốn có p99 phải chạy lại kèm flag `--summary-trend-stats`.
 
 ## 6. Cách đọc bảng (3 điểm hay bị hỏi)
 - `security-*` error% cao là **đúng mục tiêu**: k6 coi request bị **429 là "failed"** — benchmark đang đo **khả năng chặn** (brute-force bị chặn 100%, spam bị chặn 99.42%).
 - **Leaderboard là "thắng lớn"**: v0 p95 **1263ms** → v2 nocache **47.8ms** (~26×) nhờ denormalize `User.reputation` + index; bật cache còn **3.0ms**.
-- Search/Case **ổn định, không hồi quy** (5–10ms). `p99 = NaN` vì chưa chạy kèm `--summary-trend-stats` (có ghi chú ngay dưới bảng).
+- Search/Case **ổn định, không hồi quy** (5–10ms). **p99 không có trong các file kết quả** — bộ thống kê mặc định của k6 chỉ ghi `avg/min/med/max/p90/p95`; muốn có p99 phải chạy lại kèm `--summary-trend-stats="...p(99),max"`.
 
 ### Câu hỏi kiểm tra
 1. Vì sao smoke tự tạo user mới mỗi lần? → Chạy lại không trùng, không phụ thuộc dữ liệu cũ.
