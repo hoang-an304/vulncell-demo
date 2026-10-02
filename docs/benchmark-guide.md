@@ -42,7 +42,7 @@ Tăng VU = tăng số người dùng đồng thời. Ramp-up = tăng từ từ �
 
 | Chỉ số trong output k6 | Nghĩa | Đọc thế nào |
 |---|---|---|
-| `http_req_duration` `p(95)` / `p(99)` | **95%/99% request nhanh hơn mức này** | Chỉ số chính để so sánh! p95 nhỏ hơn = tốt hơn |
+| `http_req_duration` `p(95)` / `p(90)` | **95%/90% request nhanh hơn mức này** | Chỉ số chính để so sánh! p95 nhỏ hơn = tốt hơn |
 | `http_req_duration` `avg` | Trung bình | Ít tin cậy — 1 request cực chậm cũng kéo lệch |
 | `med` | Trung vị (50% request nhanh hơn) | Đại diện "người dùng điển hình" |
 | `max` | Chậm nhất | Thường là request đầu tiên (cache miss, query cold) |
@@ -259,6 +259,6 @@ npm run serve:bench                                 # API cache ON  (rate limit 
 npm run serve:bench:nocache                         # API cache OFF (rate limit tắt)
 npm run bench:search | bench:case | bench:leaderboard | bench:bruteforce | bench:spam
 k6 run --summary-export=bench/results/<tên>.json bench/k6/<script>.js
-k6 run --summary-trend-stats="avg,min,med,p(90),p(95),p(99),max" bench/k6/<script>.js
+k6 run --summary-trend-stats="avg,min,med,p(90),p(95),max" bench/k6/<script>.js
 $env:QUICK='true'; k6 run bench/k6/<script>.js      # chạy thử ~7 giây
 ```
